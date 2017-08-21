@@ -5,13 +5,26 @@
 namespace fs {
 
     use function fs\path\parent;
+    use function fs\path\standard;
 
-    function mkdir($path, $mkparent) {
+    function mkdir($path, $mkparent=false) {
         if(!exists($path)) {
             return \mkdir($path, $mkparent);
         }
 
         return true;
+    }
+
+    function subdirs($dir) {
+        $result = [];
+
+        foreach(array_diff(scandir($dir), ['.', '..']) as $sub) {
+            if(isdir(path\join($dir, $sub))) {
+                $result []= $sub;
+            }
+        }
+
+        return $result;
     }
 
     function mkparent($path) {
@@ -45,6 +58,10 @@ namespace fs {
     }
 
     function symlink($linkpath, $target) {
+        if(PHP_OS == 'WINNT') {
+            return 0 == exec("mklink /j \"$linkpath\" \"$target\"");
+        }
+
         return \symlink($target, $linkpath);
     }
 
@@ -71,6 +88,26 @@ namespace fs {
     function exists($path) {
         return \file_exists($path);
     }
+
+    function copy($source, $target) {
+        if(isdir($source)) {
+            $dir = opendir($source);
+            @mkdir($target);
+            while(false !== ( $file = readdir($dir)) ) {
+                if (( $file != '.' ) && ( $file != '..' )) {
+                    if ( is_dir($source . '/' . $file) ) {
+                        copy($source . '/' . $file,$target . '/' . $file);
+                    }
+                    else {
+                        \copy($source . '/' . $file,$target . '/' . $file);
+                    }
+                }
+            }
+            closedir($dir);
+        } else {
+            \copy($source, $target);
+        }
+    }
 }
 
 /**
@@ -78,7 +115,7 @@ namespace fs {
  */
 namespace fs\path {
     function join() {
-        $paths = func_get_args();
+        $paths = array_filter(func_get_args());
         return standard(implode('/', $paths));
     }
 
@@ -86,7 +123,42 @@ namespace fs\path {
         $path = trim(str_replace('\\', '/', $path));
         $path = str_replace('://', chr(1), $path);
         $path = preg_replace('#/{2,}#', '/', $path);
-        return str_replace(chr(1), '://', $path);
+        $path = rtrim(str_replace(chr(1), '://', $path), '/');
+        return $path == '' ? '/' : $path;
+    }
+
+    function subpath($parent, $sub) {
+        $parent = standard($parent);
+        $sub = standard($sub);
+        $subpath = substr($sub, strlen($parent));
+
+        return $subpath[0] == '/' ? ltrim($subpath, '/') : false;
+    }
+
+    function relative($path, $targetPath) {
+        $path = standard($path);
+        $targetPath = standard($targetPath);
+        $mary = explode('/', $path);
+        $tary = explode('/', $targetPath);
+        $mcount = count($mary);
+
+        $sameHead = \ary\samehead($mary, $tary);
+        $scount = count($sameHead);
+        $result = [];
+
+        if(empty($sameHead)) {
+            return $targetPath;
+        }
+
+        if($mcount > $scount) {
+            $result =  explode('/', str_repeat('../', $mcount - $scount));
+        }
+
+        $tmp = $tary;
+
+        array_splice($tmp, 0, $scount);
+        $result = array_filter(\ary\concat($result, $tmp));
+        return implode( '/', $result);
     }
 
     function basename($path) {
@@ -126,7 +198,6 @@ namespace fs\path {
  * Input or Output stream
  */
 namespace io {
-
     function writefile($path, $content, $rewrite=false) {
         return file_put_contents($path, $content, $rewrite ? 0 : FILE_APPEND);
     }
@@ -136,10 +207,107 @@ namespace io {
     }
 
     function screenoutput($content) {
-
+        echo $content;
     }
 
     function screeninput() {
 
+    }
+}
+
+namespace ary {
+    function samehead($ary1, $ary2) {
+        $ary = [];
+        $ary1 = array_values($ary1);
+        $ary2 = array_values($ary2);
+
+        for($i=0; $i<count($ary1); $i++) {
+            if(!isset($ary2[$i]) || $ary1[$i] != $ary2[$i]) {
+                return $ary;
+            }
+
+            $ary []= $ary1[$i];
+        }
+
+        return $ary;
+    }
+
+    function expand($ary) {
+        $result = [];
+
+        foreach($ary as $a) {
+            if(is_array($a)) {
+                $result = concat($result, $a);
+            } else {
+                $result []= $a;
+            }
+        }
+    }
+
+    function concat()
+    {
+        $arys = func_get_args();
+        $result = $arys[0];
+        $count = count($arys);
+
+        for($i=1; $i<$count; $i++) {
+            foreach($arys[$i] as $value) {
+                $result []= $value;
+            }
+        }
+
+        return $result;
+    }
+}
+
+namespace str {
+    function matchwildcard($subject, $wildcard, $ignorecase=false) {
+        return preg_match(wildcardtoregular($wildcard, $ignorecase), $subject);
+    }
+
+    function wildcardtoregular($wildcard, $ignorecase=false) {
+        static $_cache;
+
+        if(isset($_cache[$ignorecase][$wildcard])) {
+            return $_cache[$ignorecase][$wildcard];
+        }
+
+        $option = '';
+
+        if($ignorecase) {
+            $option = 'i';
+        }
+
+        $wildcard = str_replace('*', chr(1), $wildcard);
+        $wildcard = str_replace('?', chr(2), $wildcard);
+        $wildcard = preg_quote($wildcard);
+        $wildcard = str_replace(chr(1), '.*', $wildcard);
+        $wildcard = str_replace(chr(2), '.', $wildcard);
+        return $_cache[$ignorecase][$wildcard] = "#^$wildcard$#$option";
+    }
+
+    function stringformat($ary, $isAssoc=false)
+    {
+        if($isAssoc) {
+            $strAry = [];
+            $keys = array_keys($ary);
+            $max = 0;
+
+            foreach($keys as $key) {
+                $len = strlen($key);
+
+                if($max < $len) {
+                    $max = $len;
+                }
+            }
+
+            foreach($ary as $key => $value) {
+                $strAry []= sprintf("%{$max}s: %s", $key, $value);
+            }
+
+            return implode("\n", $strAry);
+        } else {
+            return implode("\n", $ary);
+        }
     }
 }
