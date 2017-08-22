@@ -77,18 +77,25 @@ namespace fs {
 
     function symlink($linkpath, $target) {
         if(PHP_OS == 'WINNT') {
-            $params = '';
-
+            $params = ' ';
+        
             if(isdir($target)) {
-                $params = '/D';
+                $params = ' /D ';
             }
-
+        
             $linkpath = str_replace('/', '\\', $linkpath);
             $target = str_replace('/', '\\', $target);
             $output = [];
             $result = 2;
-            exec(sprintf('mklink %s "%s" "%s" 2>&1', $params, $linkpath, $target), $output, $result);
-            return $result == 0 ? true : iconv('GB2312', 'UTF-8', $output[0]);
+            $cmd = sprintf('mklink%s"%s" "%s" 2>&1', $params, $linkpath, $target);
+            exec($cmd, $output, $result);
+           
+            if($result == 0) {
+                return true;
+            } else {
+                trigger_error("$cmd ".iconv('GB2312', 'UTF-8', $output[0]), E_USER_ERROR);
+                return false;
+            }
         }
 
         return \symlink($target, $linkpath);
@@ -233,6 +240,14 @@ namespace io {
 
     function readfile($path) {
         return file_get_contents($path);
+    }
+    
+    function endline() {
+        if(PHP_OS == 'WINNT') {
+            return "\r\n";
+        } else {
+            return "\n";
+        }
     }
 }
 

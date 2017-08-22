@@ -12,6 +12,9 @@ require_once 'lib.php';
 define('MODMGR_VERSION', '0.1.0');
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
+symlink('lib.php', 'aa');
+die;
+
 // var_dump(linkinfo('G:/wujingke/projects/php-modmgr/app/1.txt'));
 // var_dump(linkinfo('G:\wujingke\projects\php-modmgr\app\1.txt'));
 //
@@ -75,7 +78,7 @@ class App extends CommandBase
         /* @see _command_addmap */
         'addmap' => ['--map', 'f'],
         /* @see _command_showmap */
-        'showmap' => ['s', 'a'],
+        'showmap' => ['s', 'a', 'd'],
         /* @see _command_delmap */
         'delmap' => [],
     ];
@@ -131,7 +134,7 @@ class App extends CommandBase
             fs\mkdir(MODMGR_DIR_NAME);
             $this->successDie("Initialized successfuly");
         } catch (Exception $e) {
-            $this->errorDie($e->getMessage());
+            $this->_processException($e);
         }
     }
 
@@ -216,7 +219,7 @@ class App extends CommandBase
             fs\mkdir(fs\path\join($this->_modulePath, $moduleName));
             io\writefile(fs\path\join($this->_modulePath, $moduleName, MODMGR_MAPPING_NAME), '');
         } catch (Exception $e) {
-            $this->errorDie($e->getMessage());
+            $this->_processException($e);
         }
     }
 
@@ -297,9 +300,9 @@ class App extends CommandBase
         $module = $args[0];
         $this->_moduleCheckAlert($module);
 
-        if($this->getOption('s')) {
+        if($this->existsOption('s')) {
             $this->outputDie(
-                implode("\n", array_filter(array_map("trim",
+                implode(io\endline(), array_filter(array_map("trim",
                     explode("\n", io\readfile(fs\path\join($this->_modulePath, $module, MODMGR_MAPPING_NAME))))))
             );
         }
@@ -319,15 +322,43 @@ class App extends CommandBase
             $str = '';
             $i = 0;
             $max = $maxPrefix + $this->_getMappingMaxSourceLength($mappings);
-
+            $ocwd = getcwd();
+            
             foreach($mappings as $source => $target) {
                 $i ++;
 
                 if($str != '') {
-                    $str .= "\n";
+                    $str .= io\endline();
                 }
 
-                $str .= sprintf("{$this->crGray()}%03d:{$this->crNull()} {$this->crLBlue()}%{$max}s{$this->crNull()} => {$this->crSkyblue()}%s{$this->crNull()}",
+                $status = '';
+                
+                if($this->existsOption('d')) {
+                    $status = "{$this->crLRed()}(UND){$this->crNull()} ";
+                    try {
+                        $targetFullPath = fs\path\join($this->_projectPath, $target);
+
+                        if(fs\islink($targetFullPath)) {
+                            $linkinfo = linkinfo($targetFullPath);
+
+                            chdir(dirname($targetFullPath));
+                            if($linkinfo > 0) {
+                                $linkval = readlink($targetFullPath);
+                                $linkreal = realpath($linkval);
+
+                                if(fs\path\join($this->_modulePath, $module, $source) == fs\path\standard($linkreal)) {
+                                    $status = "{$this->crLSkyblue()}(D){$this->crNull()} ";;
+                                }
+                            }
+
+                            chdir($ocwd);
+                        }
+                    } catch(Exception $e) {
+                        $this->_processException($e);
+                    }
+                }
+                
+                $str .= sprintf("{$this->crGray()}%03d: {$this->crNull()}$status{$this->crLBlue()}%{$max}s{$this->crNull()} => {$this->crSkyblue()}%s{$this->crNull()}",
                     $i, fs\path\join($sourcePrefix,$source), fs\path\join($targetPrefix,$target));
             }
 
@@ -526,11 +557,24 @@ class CommandBase
 
     public function __construct()
     {
+        set_error_handler([$this, 'errorHandle']);
+        
         $argv = $this->_init();
         $this->_parseAppArguments($argv);
         $this->_checkArguments();
         $this->_checkInit();
         $this->_dispatch();
+    }
+    
+    public function errorHandle($errno, $errmsg)
+    {
+        if($errno == E_ERROR or $errno == E_USER_ERROR) {
+            throw new Exception($errmsg, 2);
+        }
+        
+        if($errno == E_WARNING or $errno == E_USER_WARNING) {
+            throw new Exception($errmsg, 1);
+        }
     }
 
     protected function _init()
@@ -711,11 +755,20 @@ class CommandBase
                     }
                 }
             } catch (Exception $e) {
-                $this->error($e->getMessage() . "During undeployed '$targetFullPath'");
+                $this->_processException($e, "{$this->crGray()} During undeployed '$targetFullPath'{$this->crNull()}");
             }
         }
     }
 
+    protected function _processException(Exception $e, $subfixMsg='')
+    {
+        if($e->getCode() == 2) {
+            $this->error($e->getMessage() . $subfixMsg);
+        } else if($e->getCode() == 1){
+            $this->warning($e->getMessage() . $subfixMsg);
+        }
+    }
+    
     protected function _deployModule($module)
     {
         if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
@@ -807,7 +860,7 @@ class CommandBase
                     chdir($oldcwd);
                 }
             } catch (Exception $e) {
-                $this->error($e->getMessage() . "During deployed '$targetFullPath'");
+                $this->_processException($e, "{$this->crGray()} During deployed '$targetFullPath'{$this->crNull()}");
             }
         }
     }
@@ -913,7 +966,7 @@ class CommandBase
     public function outputDie()
     {
         call_user_func_array([$this, 'output'], func_get_args());
-        exit;
+        die;
     }
 
     public function input($msg)
@@ -965,11 +1018,7 @@ class CommandBase
         }
 
         if(!$this->_isFirstOutput) {
-            if(PHP_OS == "WINNT") {
-                echo "\r\n";
-            } else {
-                echo "\n";
-            }
+            echo io\endline();
         } else {
             $this->_isFirstOutput = false;
         }
@@ -1102,11 +1151,12 @@ class CommandBase
     }
 }
 
-set_error_handler(function($errno, $errmsg) {
-    if($errno & E_ERROR) {
-        throw new Exception($errmsg);
-    }
-});
+//
+// set_error_handler(function($errno, $errmsg) {
+//     if($errno & E_ERROR) {
+//         throw new Exception($errmsg);
+//     }
+// });
 
 
 //
