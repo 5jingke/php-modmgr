@@ -12,7 +12,10 @@ require_once 'lib.php';
 define('MODMGR_VERSION', '0.1.0');
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
-
+// var_dump(linkinfo('G:/wujingke/projects/php-modmgr/app/1.txt'));
+// var_dump(linkinfo('G:\wujingke\projects\php-modmgr\app\1.txt'));
+//
+// die;
 class App extends CommandBase
 {
     /**
@@ -38,17 +41,24 @@ class App extends CommandBase
         'list' => ['a', 's'],
 
         /* @see _command_deploy */
-        'deploy' => ['f', 'a', 'c'],
+        'deploy' => ['f', 'a', 'c', 'y'],
         'deploy-all' => [],
         'd' => 'deploy',
 
-        'undeploy' => [],
+        /* @see _command_undeploy */
+        'undeploy' => ['f', 'y'],
         'ud' => 'undeploy',
 
         'clean' => [],
 
+        /* @see _command_git */
+        'git' => ['y'],
+
+        /* @see _command_clone */
+        'clone' => ['f', 'n'],
+
         /* @see _command_show */
-        'show' => ['l', 'v'],
+        'show' => ['a', 'v'],
 
         /* @see _command_version */
         'version' => ['s'],
@@ -96,29 +106,30 @@ class App extends CommandBase
         ];
 
         if (empty($args)) {
-            if ($this->existsOption('l')) {
+            if ($this->existsOption('a')) {
                 if ($this->existsOption('v')) {
-                    $this->outputAndExit(str\stringformat($data, true));
+                    $this->outputDie(str\stringformat($data, true));
                 } else {
-                    $this->outputAndExit(str\stringformat(array_keys($data)));
+                    $this->outputDie(str\stringformat(array_keys($data)));
                 }
             }
 
-            $this->errorDie("Missing the value key.\nUse 'help' command to get help.");
+            $this->error("Missing the value key.");
+            $this->infoDie("Use 'help' command to get help.");
         } else {
-            $this->outputAndExit($data[$args[0]]);
+            $this->outputDie($data[$args[0]]);
         }
     }
 
     protected function _command_initialize()
     {
         if (is_dir(MODMGR_DIR_NAME)) {
-            $this->outputAndExit("This directory does not need to be initialized again");
+            $this->outputDie("This directory does not need to be initialized again");
         }
 
         try {
             fs\mkdir(MODMGR_DIR_NAME);
-            $this->outputAndExit("Initialized successfuly");
+            $this->successDie("Initialized successfuly");
         } catch (Exception $e) {
             $this->errorDie($e->getMessage());
         }
@@ -133,13 +144,38 @@ class App extends CommandBase
         $wildcard = $args[0];
         $modules = $this->_getAvailableModules($wildcard);
 
+        $this->multiModulesConfirm(count($modules), 'deployed');
+
         if (empty($modules)) {
-            $this->errorDie("Parameter '%s' does not match any module.\nYou can use 'list' command to get all available modules", $wildcard);
+            $this->error("Parameter '%s' does not match any module.", $wildcard);
+            $this->infoDie("You can use 'list' command to get all available modules.");
         }
 
         foreach ($modules as $module) {
-            $this->output("Deploying module '%s'", $module);
+            $this->output("Deploying module '{$this->crLWhite()}%s{$this->crNull()}'", $module);
             $this->_deployModule($module);
+        }
+    }
+
+    protected function _command_undeploy($args)
+    {
+        if (empty($args)) {
+            $this->errorDie("Missing a module name or wildcard.");
+        }
+
+        $wildcard = $args[0];
+        $modules = $this->_getAvailableModules($wildcard);
+
+        $this->multiModulesConfirm(count($modules), 'undeployed');
+
+        if (empty($modules)) {
+            $this->error("Parameter '%s' does not match any module.", $wildcard);
+            $this->infoDie("You can use 'list' command to get all available modules.");
+        }
+
+        foreach ($modules as $module) {
+            $this->output("Undeploying module '{$this->crLWhite()}%s{$this->crNull()}'", $module);
+            $this->_undeployModule($module);
         }
     }
 
@@ -154,11 +190,13 @@ class App extends CommandBase
         }
 
         if(!empty($modules)) {
+            echo "{$this->crLBlue()}";
             $this->output(str\stringformat($modules));
+            echo"{$this->crNull()}";
         }
 
         if (!$this->existsOption('s')) {
-            $this->output("Total of %d module(s)", count($modules));
+            $this->info("Total of %d module(s)", count($modules));
         }
     }
 
@@ -260,7 +298,7 @@ class App extends CommandBase
         $this->_moduleCheckAlert($module);
 
         if($this->getOption('s')) {
-            $this->outputAndExit(
+            $this->outputDie(
                 implode("\n", array_filter(array_map("trim",
                     explode("\n", io\readfile(fs\path\join($this->_modulePath, $module, MODMGR_MAPPING_NAME))))))
             );
@@ -289,7 +327,8 @@ class App extends CommandBase
                     $str .= "\n";
                 }
 
-                $str .= sprintf("%03d: %{$max}s => %s", $i, fs\path\join($sourcePrefix,$source), fs\path\join($targetPrefix,$target));
+                $str .= sprintf("{$this->crGray()}%03d:{$this->crNull()} {$this->crLBlue()}%{$max}s{$this->crNull()} => {$this->crSkyblue()}%s{$this->crNull()}",
+                    $i, fs\path\join($sourcePrefix,$source), fs\path\join($targetPrefix,$target));
             }
 
             $this->output($str);
@@ -327,16 +366,127 @@ class App extends CommandBase
         io\writefile(fs\path\join($this->_modulePath, $module, MODMGR_MAPPING_NAME),
             $this->_translateMappingArrayToString($mappings), true);
     }
+
+    protected function _command_git($args)
+    {
+        $moduleWildcard = $args[0];
+        unset($args[0]);
+        $args = array_values($args);
+
+        if(empty($moduleWildcard)) {
+            $this->errorDie("Missing a module name");
+        }
+
+        $modules = $this->_getAllModules($moduleWildcard);
+        $this->multiModulesConfirm(count($modules), "executed git command");
+        $ocwd = getcwd();
+
+        foreach ($modules as $module) {
+            $this->output("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()}\n", $module);
+            $cmd = sprintf('git %s', implode(' ', $args));
+            $moduleParent = fs\path\join($this->_modulePath, $module);
+            chdir($moduleParent);
+            system($cmd);
+            chdir($ocwd);
+        }
+    }
+
+    protected function _command_clone($args)
+    {
+        $repo = $args[0];
+
+        if(empty($repo)) {
+            $this->errorDie("Missing a repository uri.");
+        }
+
+        $module = preg_replace("#\.git$#i", '', \fs\path\basename($repo));
+
+        if($this->existsOption('f')) {
+            $modulePath = fs\path\join($this->_modulePath, $module);
+
+            if(fs\exists($modulePath)) {
+                fs\rm($modulePath, true);
+            }
+        }
+
+        $cmd = sprintf('git clone %s', $repo);
+        $ocwd = getcwd();
+        chdir($this->_modulePath);
+        system($cmd);
+        chdir($ocwd);
+
+        if(!$this->existsOption('n')) {
+            $this->_deployModule($module);
+        }
+    }
+
+    protected function _command_clean()
+    {
+        $current = getcwd();
+        $self = $this;
+
+        $cleanFunc = function ($path) use (&$cleanFunc, $self) {
+            $dir = dir($path);
+            $ocwd = getcwd();
+
+            while($file = $dir->read()) {
+                $filePath = \fs\path\standard("$path/$file");
+
+                if (\fs\islink($filePath)) {
+                    try {
+                        // echo $filePath;
+                        // var_dump(\fs\exists($filePath));
+                        $linkInfoValue = \linkinfo($filePath);
+                        chdir(dirname($filePath));
+
+                        if ($linkInfoValue == 0 or $linkInfoValue == -1) {
+                            \fs\rm($filePath);
+                            $self->success("Removed invalid link: '%s'", $filePath);
+                        }
+
+                        chdir($ocwd);
+                    } catch (\Exception $e) {
+                        chdir($ocwd);
+                        $this->error($e->getMessage());
+                    }
+                } else if ((is_dir($filePath)) and $file != "." and $file != "..") {
+                    $cleanFunc($filePath);
+                }
+            }
+
+            $dir->close();
+        };
+
+        $cleanFunc($current);
+    }
 }
 
 
 /**
  * 基础
  * Class CommandBase
+ * @method crNull
+ * @method crRed
+ * @method crBlack
+ * @method crGreen
+ * @method crYellow
+ * @method crBlue
+ * @method crPurple
+ * @method crSkyblue
+ * @method crWhite
+ * @method crLRed
+ * @method crGray
+ * @method crLGreen
+ * @method crLYellow
+ * @method crLBlue
+ * @method crLPurple
+ * @method crLSkyblue
+ * @method crLWhite
  */
 class CommandBase
 {
     protected $_commondList = [];
+    protected $_globalOptionsSupports = ['--nocolor', '--nooutput'];
     protected $_noNeedToInit = ['help', 'version', 'initialize'];
 
     protected $_command;
@@ -352,6 +502,28 @@ class CommandBase
     protected $_isFirstOutput = true;
     protected $_enableOutput = true;
 
+    public $OUTPUT_COLOR = [
+        "NULL" => "\033[0;0m",
+
+        'BLACK' => "\033[0;30m",
+        'RED' => "\033[0;31m",
+        'GREEN' => "\033[0;32m",
+        'YELLOW' => "\033[0;33m",
+        'BLUE' => "\033[0;34m",
+        'PURPLE' => "\033[0;35m",
+        'SKYBLUE' => "\033[0;36m",
+        'WHITE' => "\033[0;37m",
+
+        'GRAY' => "\033[1;30m",
+        'LRED' => "\033[1;31m",
+        'LGREEN' => "\033[1;32m",
+        'LYELLOW' => "\033[1;33m",
+        'LBLUE' => "\033[1;34m",
+        'LPURPLE' => "\033[1;35m",
+        'LSKYBLUE' => "\033[1;36m",
+        'LWHITE' => "\033[1;37m",
+    ];
+
     public function __construct()
     {
         $argv = $this->_init();
@@ -365,6 +537,7 @@ class CommandBase
     {
         $argv = $_SERVER['argv'];
         $this->_scriptPath = fs\path\standard($argv[0]);
+
         unset($argv[0]);
 
         $this->_command = $argv[1];
@@ -400,9 +573,9 @@ class CommandBase
     {
         if(empty($this->_modulePath)) {
             if(!in_array($this->_targetCommand, $this->_noNeedToInit)) {
-                $this->errorDie("The current directory has not been initialized yet.".
-                "\nYou can use 'init' command to initialize".
-                "\nDirectory '%s'", getcwd());
+                $this->error("The current directory has not been initialized yet.");
+                $this->output("Directory '%s'", getcwd());
+                $this->infoDie("You can use 'init' command to initialize");
             }
         }
     }
@@ -466,6 +639,12 @@ class CommandBase
         return true;
     }
 
+    public function setOption($key, $value=[true])
+    {
+        $this->_commandOptions[$key] = $value;
+        return $this;
+    }
+
     protected function _translateMappingArrayToString($mappings)
     {
         $str = '';
@@ -499,6 +678,44 @@ class CommandBase
         return $max;
     }
 
+    protected function _undeployModule($module)
+    {
+        if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
+            $this->errorDie("Module '%s' is not exists.", $module);
+        }
+
+        $mappings = $this->_getModuleMapping($module);
+
+        if(empty($mappings)) {
+            die;
+        }
+
+        foreach ($mappings as $modulePath => $targetPath) {
+            $targetFullPath = fs\path\join($this->_projectPath, $modulePath);
+
+            try {
+                if ($this->existsOption('c')) {
+                    if (fs\exists($targetFullPath)) {
+                        fs\rm($targetFullPath, true);
+                        $this->output("Remove: '%s'", $targetFullPath);
+                    }
+                } else {
+                    if (fs\exists($targetFullPath)) {
+                        if(!fs\islink($targetFullPath) && !$this->existsOption('f')) {
+                            $this->warning("There is an exist file or folder '%s'", $targetFullPath);
+                            $this->info("You can use '-f' option to forece remove exists file or folder.");
+                        } else {
+                            fs\rm($targetFullPath, true);
+                            $this->success("Removed '%s'", $targetFullPath);
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $this->error($e->getMessage() . "During undeployed '$targetFullPath'");
+            }
+        }
+    }
+
     protected function _deployModule($module)
     {
         if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
@@ -521,7 +738,7 @@ class CommandBase
                         if($this->existsOption('f')) {
                             fs\rm($targetFullPath);
                             fs\copy($moduleFullPath, $targetFullPath);
-                            $this->output("Deployed: %s", $moduleFullPath);
+                            $this->output("Copy '%s' to '%s'", $moduleFullPath, $targetFullPath);
                         } else {
                             $this->error("Can't copy file or directory to '%s', the path is already exists", $targetFullPath);
                         }
@@ -535,39 +752,62 @@ class CommandBase
                         $linkval = fs\path\relative(fs\path\parent($targetFullPath), $moduleFullPath);
                     }
 
-                    if(fs\islink($targetFullPath) && fs\readlink($targetFullPath) == $linkval) {
-                        continue;
+                    if(fs\islink($targetFullPath) && !$this->existsOption('f')) {
+                        $realpath = $linkval;
+
+                        if(!$this->existsOption('c')) {
+                            $realpath = realpath(fs\path\join(dirname($targetFullPath), $linkval));
+                        }
+
+                        $realpath = fs\path\standard($realpath);
+                        $readlink = fs\path\standard(fs\readlink($targetFullPath));
+
+                        if($readlink == $realpath) {
+                            continue;
+                        }
                     }
 
                     if(fs\exists($targetFullPath)) {
                         if($this->existsOption('f')) {
-                            fs\rm($targetFullPath,true);
+                            $result = fs\rm($targetFullPath,true);
+
+                            if(true !== $result) {
+                                $this->error("Can't remove link '%s'. %s", $targetFullPath, $result);
+                                continue;
+                            }
                         } else {
                             $this->error("Can't create link '%s', the path is already exists", $targetFullPath);
                             continue;
                         }
                     }
-                    
+
                     $targetParent = dirname($targetFullPath);
-                    
+
                     if(!fs\isdir($targetParent)) {
                         fs\mkdir($targetParent, true);
                     }
 
-                    // $oldcwd = getcwd();
-                    // chdir(dirname($targetFullPath));
+                    $oldcwd = getcwd();
+                    $relativeTargetPath = fs\path\subpath($this->_projectPath, $targetFullPath);
+                    chdir(dirname($targetFullPath));
+
+                    if(!fs\exists($linkval)) {
+                        $this->error("Link to a not exists file or folder: '%s'", $linkval);
+                        continue;
+                    }
+
                     $result = fs\symlink($targetFullPath, $linkval);
-                    
+
                     if($result===true) {
-                        $this->output("Deployed: %s => %s", $targetFullPath, $linkval);
+                        $this->success("%s => %s", $relativeTargetPath, $linkval);
                     } else {
                         $this->error($result);
                     }
-                    // chdir($oldcwd);
-                    
+
+                    chdir($oldcwd);
                 }
             } catch (Exception $e) {
-                $this->error($e->getMessage() . " '$targetFullPath'");
+                $this->error($e->getMessage() . "During deployed '$targetFullPath'");
             }
         }
     }
@@ -616,18 +856,13 @@ class CommandBase
 
             if($arg == '--') {
                 for($j=$i+1; $j<$argc; $j++) {
-                    $this->_commandArguments []= $arg[$j];
+                    $this->_commandArguments []= $argv[$j];
                 }
 
                 return;
             }
 
             if(substr($arg, 0, 2) == '--') {
-
-                if($this->existsOption($arg)) {
-                    $this->errorDie("Duplicate option: '%s'", $arg);
-                }
-
                 $this->_commandOptions[$arg] = [];
                 $valueEscapeKey = str_replace('-', '_', ltrim($arg, '-'));
                 $argsHandle = &$this->_commandOptions[$arg];
@@ -669,29 +904,77 @@ class CommandBase
         $supportOptions = $this->_getCommandSupportOptions();
 
         foreach ($this->_commandOptions as $key => $option) {
-            if(!in_array($key, $supportOptions)) {
-                $this->errorDie("Does not supported option '%s' in command '%s'", $key, $this->_command);
+            if(!in_array($key, $supportOptions) && !in_array($key, $this->_globalOptionsSupports)) {
+                $this->errorDie("Option '%s' is not supported in command '%s'", $key, $this->_command);
             }
         }
     }
 
-    public function outputAndExit()
+    public function outputDie()
     {
         call_user_func_array([$this, 'output'], func_get_args());
         exit;
     }
 
+    public function input($msg)
+    {
+        if(func_num_args() > 0) {
+            call_user_func_array([$this, 'output'], func_get_args());
+        }
+
+        return fgets(STDIN);
+    }
+
+    public function inputYN() {
+        while(true) {
+            $result = trim(strtoupper(call_user_func_array([$this, 'input'], func_get_args())));
+
+            if($result == "Y") {
+                return true;
+            }
+
+            if($result == "N") {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    public function multiModulesConfirm($count, $opmsg)
+    {
+        if($count > 1 && !$this->existsOption('y')) {
+            if(!$this->inputYN("There are $count modules will be $opmsg, are you sure? (y/n):")) {
+                die;
+            }
+        }
+    }
+
     public function output($str)
     {
+        if($this->existsOption('--nooutput')) {
+            return;
+        }
+
         $args = func_get_args();
+        $content = $args[0];
+
+        if($this->existsOption('--nocolor')) {
+            $content = preg_replace("#\033\[([01];)?([0-9]{1,2};)?[0-9]{1,2}m#", '', $content);
+            $args[0] = $content;
+        }
 
         if(!$this->_isFirstOutput) {
-            io\screenoutput("\n");
+            if(PHP_OS == "WINNT") {
+                echo "\r\n";
+            } else {
+                echo "\n";
+            }
         } else {
             $this->_isFirstOutput = false;
         }
 
-        io\screenoutput(call_user_func_array('sprintf', $args));
+        echo call_user_func_array('sprintf', $args);
     }
 
     public function errorDie($msg)
@@ -703,8 +986,41 @@ class CommandBase
     public function error()
     {
         $args = func_get_args();
-        $args[0] = '[error] ' . $args[0];
+        $args[0] = "[{$this->crLRed()}error{$this->crNull()}] " . $args[0];
         call_user_func_array([$this, 'output'], $args);
+    }
+
+    public function warning()
+    {
+        $args = func_get_args();
+        $args[0] = "[{$this->crLYellow()}warning{$this->crNull()}] " . $args[0];
+        call_user_func_array([$this, 'output'], $args);
+    }
+
+    public function info()
+    {
+        $args = func_get_args();
+        $args[0] = "{$this->crGray()}{$args[0]}{$this->crNull()}";
+        call_user_func_array([$this, 'output'], $args);
+    }
+
+    public function infoDie()
+    {
+        call_user_func_array([$this, 'info'], func_get_args());
+        die;
+    }
+
+    public function success()
+    {
+        $args = func_get_args();
+        $args[0] = "[{$this->crGreen()}ok{$this->crNull()}] {$args[0]}";
+        call_user_func_array([$this, 'output'], $args);
+    }
+
+    public function successDie()
+    {
+        call_user_func_array([$this, 'success'], func_get_args());
+        die;
     }
 
     /**
@@ -774,10 +1090,20 @@ class CommandBase
     {
         return "_command_{$this->_commandEscape}";
     }
+
+    public function __call($functionName, $t)
+    {
+        if(substr($functionName, 0,2) == 'cr') {
+            $key = strtoupper(substr($functionName, 2));
+            return $this->OUTPUT_COLOR[$key];
+        }
+
+        return null;
+    }
 }
 
 set_error_handler(function($errno, $errmsg) {
-    if($errno & ERROR_REPORTING) {
+    if($errno & E_ERROR) {
         throw new Exception($errmsg);
     }
 });

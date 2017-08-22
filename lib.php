@@ -9,7 +9,7 @@ namespace fs {
 
     function mkdir($path, $mkparent=false) {
         if(!exists($path)) {
-            return \mkdir($path, $mkparent);
+            return \mkdir($path, 0777, $mkparent);
         }
 
         return true;
@@ -48,7 +48,25 @@ namespace fs {
     }
 
     function rm($path, $rmtree=false) {
-        if (isfile($path) || islink($path)) {
+        if (islink($path)) {
+            if(PHP_OS == 'WINNT') {
+                try{
+                    return rmfile($path);
+                } catch (\Exception $e) {
+                    $output = [];
+                    $result = 2;
+                    exec(sprintf('rmdir "%s" 2>&1', $path), $output, $result);
+
+                    if($result == 0) {
+                        return true;
+                    } else {
+                        throw new \Exception(iconv('GB2312', 'UTF-8', $output[0]));
+                    }
+                }
+            } else {
+                return rmfile($path);
+            }
+        } else if(isfile($path)) {
             return rmfile($path);
         } else if(isdir($path)) {
             return rmdir($path, $rmtree);
@@ -60,7 +78,7 @@ namespace fs {
     function symlink($linkpath, $target) {
         if(PHP_OS == 'WINNT') {
             $params = '';
-           
+
             if(isdir($target)) {
                 $params = '/D';
             }
@@ -215,14 +233,6 @@ namespace io {
 
     function readfile($path) {
         return file_get_contents($path);
-    }
-
-    function screenoutput($content) {
-        echo $content;
-    }
-
-    function screeninput() {
-
     }
 }
 
