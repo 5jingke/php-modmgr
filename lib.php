@@ -48,7 +48,7 @@ namespace fs {
     }
 
     function rm($path, $rmtree=false) {
-        if (isfile($path)) {
+        if (isfile($path) || islink($path)) {
             return rmfile($path);
         } else if(isdir($path)) {
             return rmdir($path, $rmtree);
@@ -59,7 +59,18 @@ namespace fs {
 
     function symlink($linkpath, $target) {
         if(PHP_OS == 'WINNT') {
-            return 0 == exec("mklink /j \"$linkpath\" \"$target\"");
+            $params = '';
+           
+            if(isdir($target)) {
+                $params = '/D';
+            }
+
+            $linkpath = str_replace('/', '\\', $linkpath);
+            $target = str_replace('/', '\\', $target);
+            $output = [];
+            $result = 2;
+            exec(sprintf('mklink %s "%s" "%s" 2>&1', $params, $linkpath, $target), $output, $result);
+            return $result == 0 ? true : iconv('GB2312', 'UTF-8', $output[0]);
         }
 
         return \symlink($target, $linkpath);

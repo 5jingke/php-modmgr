@@ -5,7 +5,6 @@
  * Date: 2017-8-4
  * Time: 下午 05:26
  */
-
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
 error_reporting(ERROR_REPORTING);
 require_once 'lib.php';
@@ -523,6 +522,8 @@ class CommandBase
                             fs\rm($targetFullPath);
                             fs\copy($moduleFullPath, $targetFullPath);
                             $this->output("Deployed: %s", $moduleFullPath);
+                        } else {
+                            $this->error("Can't copy file or directory to '%s', the path is already exists", $targetFullPath);
                         }
                     } else {
                         fs\copy($moduleFullPath, $targetFullPath);
@@ -546,15 +547,27 @@ class CommandBase
                             continue;
                         }
                     }
+                    
+                    $targetParent = dirname($targetFullPath);
+                    
+                    if(!fs\isdir($targetParent)) {
+                        fs\mkdir($targetParent, true);
+                    }
 
-                    $oldcwd = getcwd();
-                    chdir(dirname($targetFullPath));
-                    fs\symlink(basename($targetFullPath), $linkval);
-                    chdir($oldcwd);
-                    $this->output("Deployed: %s => %s", $targetFullPath, $linkval);
+                    // $oldcwd = getcwd();
+                    // chdir(dirname($targetFullPath));
+                    $result = fs\symlink($targetFullPath, $linkval);
+                    
+                    if($result===true) {
+                        $this->output("Deployed: %s => %s", $targetFullPath, $linkval);
+                    } else {
+                        $this->error($result);
+                    }
+                    // chdir($oldcwd);
+                    
                 }
             } catch (Exception $e) {
-                $this->error($e->getMessage() . " '$targetFullPath' => '$linkval");
+                $this->error($e->getMessage() . " '$targetFullPath'");
             }
         }
     }
