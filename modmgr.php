@@ -12,9 +12,6 @@ require_once 'lib.php';
 define('MODMGR_VERSION', '0.1.0');
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
-symlink('lib.php', 'aa');
-die;
-
 // var_dump(linkinfo('G:/wujingke/projects/php-modmgr/app/1.txt'));
 // var_dump(linkinfo('G:\wujingke\projects\php-modmgr\app\1.txt'));
 //
@@ -36,52 +33,133 @@ class App extends CommandBase
      * @var array
      */
     protected $_commondList = [
-        /* @see _command_help */
+        /**
+         * @see _command_help
+         */
         'help' => [],
         '' => 'help',
 
-        /* @see _command_list */
+        /**
+         * @see _command_list
+         * a: 显示全部模块
+         * s: 简单模式
+         */
         'list' => ['a', 's'],
+        'l' => 'list',
 
-        /* @see _command_deploy */
+        /**
+         * @see _command_deploy
+         * 部署模块
+         * f: 强制部署代码。删除已存在的文件或链接
+         * a: 部署代码链接时，使用绝对路径创建链接。（如果指定了 -c 选项，则此选项会被忽略）
+         * c: 复制文件或目录进行部署，而不是创建符号链接
+         * y: 忽略多模块时的确认信息
+         */
         'deploy' => ['f', 'a', 'c', 'y'],
         'deploy-all' => [],
         'd' => 'deploy',
 
-        /* @see _command_undeploy */
+        /**
+         * @see _command_undeploy
+         * f: 强制卸载模块，删除链接或文件
+         * y: 忽略多模块时的确认信息
+         */
         'undeploy' => ['f', 'y'],
         'ud' => 'undeploy',
 
-        'clean' => [],
+        /**
+         * @see _command_clean
+         * 清除无效的链接
+         * d: 同时清除空目录树
+         */
+        'clean' => ['d'],
 
-        /* @see _command_git */
+        /**
+         * @see _command_git
+         * y: 忽略多模块时的确认信息
+         */
         'git' => ['y'],
 
-        /* @see _command_clone */
+        /**
+         * @see _command_clone
+         * f: 强制克隆，删除已存在的目录
+         * n: 只克隆代码， 不进行部署
+         */
         'clone' => ['f', 'n'],
 
-        /* @see _command_show */
+        /**
+         * @see _command_show
+         * a: 显示所有程序变量名
+         * v: 显示值
+         */
         'show' => ['a', 'v'],
 
-        /* @see _command_version */
+        /**
+         * @see _command_version
+         * s: 简单模式
+         */
         'version' => ['s'],
         'v' => 'version',
         'ver' => 'v',
 
-        /* @see _command_initialize */
+        /**
+         * @see _command_initialize
+         */
         'initialize' => [],
         'init' => 'initialize',
 
-        /* @see _command_create */
+        /**
+         * @see _command_create
+         * 创建模块
+         */
         'create' => [],
 
-        /* @see _command_addmap */
-        'addmap' => ['--map', 'f'],
-        /* @see _command_showmap */
+        /**
+         * @see _command_addmap
+         * 添加模块映射
+         * --map: 指定映射
+         * f: 覆盖已存在的map
+         */
+        'mapadd' => ['--map', 'f'],
+        /**
+         * @see _command_showmap
+         * 显示模块的映射
+         * s: 简单模式
+         * a: 显示绝对路径
+         * d: 显示部署状态: (D)已部署， (UND)未部署
+         */
         'showmap' => ['s', 'a', 'd'],
-        /* @see _command_delmap */
-        'delmap' => [],
+        'map' => 'showmap',
+
+        /**
+         * @see _command_delmap
+         */
+        'mapdel' => [],
+
+        /**
+         * @see _command_persistent
+         * 常驻模式
+         * --admin-shell: 提升权限并在指定的shell中运行. 默认 cmd, 支持powershell
+         * --cwd: 指定工作目录
+         */
+        'persistent' => ['--admin-shell', '--cwd'],
+        'pss' => 'persistent',
+
+        /**
+         * @see _command_elevate_privileges
+         * 提升权限
+         */
+        'elevate-privileges' => ['--cwd'],
+        'ep' => 'elevate-privileges',
+
+        /**
+         * @see _command_cwd
+         * 显示工作路径
+         */
+        'cwd' => [],
     ];
+
+    protected $_isPersistentMode = false;
 
     /**
      * Display help document
@@ -91,12 +169,88 @@ class App extends CommandBase
         echo 'helpppper';
     }
 
+    protected function _command_cwd()
+    {
+        $this->output(getcwd());
+    }
+
     protected function _command_version()
     {
         if ($this->existsOption('s')) {
             echo MODMGR_VERSION;
         } else {
             echo 'Module Manager Version: ' . MODMGR_VERSION;
+        }
+    }
+
+    protected function _command_persistent()
+    {
+        if($this->getOption('--cwd')) {
+            chdir($this->getOption('--cwd'));
+        }
+
+        if ($this->existsOption('--admin-shell')) {
+            if(PHP_OS == "WINNT") {
+                $shell = strtolower(trim($this->getOption('--admin-shell')));
+
+                if(empty($shell)) {
+                    if(floatval(php_uname('r')) >= 8) {
+                        $shell = "powershell";
+                    } else {
+                        $shell = "cmd";
+                    }
+                }
+
+                $adminShells = [
+                    'cmd' => 'cmd /k',
+                    'powershell' => 'powershell -Command',
+                    // 'bash' => 'bash -c',
+                ];
+
+                $shellApp = $adminShells[$shell];
+
+                if($shell == 'cmd') {
+                    $this->setOption('--nocolor');
+                }
+
+                $shellCmd = sprintf('%s', empty($shellApp) ? '' : $shellApp);
+
+                $sudo = fs\path\join(dirname($this->_scriptPath), 'sudo.vbs');
+
+                $cmd = sprintf('wscript "%s" %s php "%s" persistent %s --cwd "%s"',
+                        $sudo, $shellCmd, $this->_scriptPath, $this->_packGlobalOptionsToStr(), getcwd());
+
+            } else {
+                $cmd = sprintf('sudo php "%s" persistent %s --cwd "%s"',
+                    $this->_scriptPath, $this->_packGlobalOptionsToStr(), getcwd());
+            }
+
+            system($cmd);
+            return;
+        }
+
+        $this->_isPersistentMode = true;
+
+        while(true) {
+            $command = trim($this->input("{$this->crWhite()}modmgr %s> {$this->crNull()}", getcwd()));
+
+            if('persistent' == strtolower($command) or 'pss' == strtolower($command)) {
+                $command = '';
+            }
+
+            if(empty($command)) {
+                $this->_isFirstOutput = true;
+                continue;
+            }
+
+            if(strtolower($command) == "exit") {
+                $this->_isFirstOutput = true;
+                $this->output("{$this->crLGreen()}Bye!{$this->crNull()}");
+                break;
+            }
+
+            $cmd = sprintf('php "%s" %s %s', $this->_scriptPath, $command, $this->_packGlobalOptionsToStr());
+            system($cmd);
         }
     }
 
@@ -193,9 +347,7 @@ class App extends CommandBase
         }
 
         if(!empty($modules)) {
-            echo "{$this->crLBlue()}";
-            $this->output(str\stringformat($modules));
-            echo"{$this->crNull()}";
+            $this->output("{$this->crLWhite()}%s{$this->crNull()}", str\stringformat($modules));
         }
 
         if (!$this->existsOption('s')) {
@@ -295,7 +447,7 @@ class App extends CommandBase
         }
     }
 
-    protected function _command_showmap($args)
+    protected function _command_showmap($args, $single=false)
     {
         $module = $args[0];
         $this->_moduleCheckAlert($module);
@@ -323,7 +475,7 @@ class App extends CommandBase
             $i = 0;
             $max = $maxPrefix + $this->_getMappingMaxSourceLength($mappings);
             $ocwd = getcwd();
-            
+
             foreach($mappings as $source => $target) {
                 $i ++;
 
@@ -331,34 +483,30 @@ class App extends CommandBase
                     $str .= io\endline();
                 }
 
-                $status = '';
-                
-                if($this->existsOption('d')) {
-                    $status = "{$this->crLRed()}(UND){$this->crNull()} ";
-                    try {
-                        $targetFullPath = fs\path\join($this->_projectPath, $target);
+                $status = "    ";
+                try {
+                    $targetFullPath = fs\path\join($this->_projectPath, $target);
 
-                        if(fs\islink($targetFullPath)) {
-                            $linkinfo = linkinfo($targetFullPath);
+                    if(fs\islink($targetFullPath)) {
+                        $linkinfo = linkinfo($targetFullPath);
 
-                            chdir(dirname($targetFullPath));
-                            if($linkinfo > 0) {
-                                $linkval = readlink($targetFullPath);
-                                $linkreal = realpath($linkval);
+                        chdir(dirname($targetFullPath));
+                        if($linkinfo > 0) {
+                            $linkval = readlink($targetFullPath);
+                            $linkreal = realpath($linkval);
 
-                                if(fs\path\join($this->_modulePath, $module, $source) == fs\path\standard($linkreal)) {
-                                    $status = "{$this->crLSkyblue()}(D){$this->crNull()} ";;
-                                }
+                            if(fs\path\join($this->_modulePath, $module, $source) == fs\path\standard($linkreal)) {
+                                $status = "{$this->crLSkyblue()}(D){$this->crNull()} ";;
                             }
-
-                            chdir($ocwd);
                         }
-                    } catch(Exception $e) {
-                        $this->_processException($e);
+
+                        chdir($ocwd);
                     }
+                } catch(Exception $e) {
+                    $this->_processException($e);
                 }
-                
-                $str .= sprintf("{$this->crGray()}%03d: {$this->crNull()}$status{$this->crLBlue()}%{$max}s{$this->crNull()} => {$this->crSkyblue()}%s{$this->crNull()}",
+
+                $str .= sprintf("{$this->crGray()}%03d: {$this->crNull()}$status{$this->crSkyblue()}%{$max}s{$this->crNull()} => {$this->crSkyblue()}%s{$this->crNull()}",
                     $i, fs\path\join($sourcePrefix,$source), fs\path\join($targetPrefix,$target));
             }
 
@@ -413,13 +561,46 @@ class App extends CommandBase
         $ocwd = getcwd();
 
         foreach ($modules as $module) {
-            $this->output("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()}\n", $module);
             $cmd = sprintf('git %s', implode(' ', $args));
+            $this->output("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()} > {$this->crGray()}%s{$this->crNull()}\n", $module, $cmd);
             $moduleParent = fs\path\join($this->_modulePath, $module);
             chdir($moduleParent);
             system($cmd);
             chdir($ocwd);
         }
+    }
+
+    protected function _command_elevate_privileges($args) {
+        if(PHP_OS != "WINNT") {
+            return;
+        }
+
+        $shell = $args[0];
+
+        if(empty($shell)) {
+            if(floatval(php_uname('r')) >= 8) {
+                $shell = "powershell";
+            } else {
+                $shell = "cmd";
+            }
+        }
+
+        $adminShells = [
+            'cmd' => 'cmd --none-- /k cd /d --quote-- ',
+            'powershell' => 'powershell.exe -noexit -command Set-Location -literalPath ',
+            'gitbash' => 'git-bash --cd=',
+        ];
+
+        $shellCmd = $adminShells[strtolower($shell)];
+        $shellCmd = $shellCmd ? $shellCmd : $shell;
+
+        if($this->getOption('--cwd')) {
+            chdir($this->getOption('--cwd'));
+        }
+
+        $sudo = fs\path\join(dirname($this->_scriptPath), 'sudo.vbs');
+        $cmd = sprintf('wscript "%s" %s"%s"', $sudo, $shellCmd, getcwd());
+        system($cmd);
     }
 
     protected function _command_clone($args)
@@ -461,12 +642,14 @@ class App extends CommandBase
             $ocwd = getcwd();
 
             while($file = $dir->read()) {
+                if($file != "." and $file != "..") {
+                    continue;
+                }
+
                 $filePath = \fs\path\standard("$path/$file");
 
                 if (\fs\islink($filePath)) {
                     try {
-                        // echo $filePath;
-                        // var_dump(\fs\exists($filePath));
                         $linkInfoValue = \linkinfo($filePath);
                         chdir(dirname($filePath));
 
@@ -478,10 +661,21 @@ class App extends CommandBase
                         chdir($ocwd);
                     } catch (\Exception $e) {
                         chdir($ocwd);
-                        $this->error($e->getMessage());
+                        $self->_processException($e);
                     }
-                } else if ((is_dir($filePath)) and $file != "." and $file != "..") {
+                } else if (is_dir($filePath)) {
                     $cleanFunc($filePath);
+
+                    if($this->existsOption('d')) {
+                        if(fs\isempty($filePath)) {
+                            try {
+                                rmdir($filePath);
+                                $self->success("Removed empty directory: '%s'", $filePath);
+                            } catch (Exception $e) {
+                                $self->_processException($e);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -518,7 +712,8 @@ class CommandBase
 {
     protected $_commondList = [];
     protected $_globalOptionsSupports = ['--nocolor', '--nooutput'];
-    protected $_noNeedToInit = ['help', 'version', 'initialize'];
+    protected $_noNeedToInit = ['help', 'version', 'initialize', 'persistent', 'cwd',
+        'elevate-privileges', 'clean', 'list', 'show'];
 
     protected $_command;
     protected $_targetCommand;
@@ -557,28 +752,17 @@ class CommandBase
 
     public function __construct()
     {
-        set_error_handler([$this, 'errorHandle']);
-        
         $argv = $this->_init();
         $this->_parseAppArguments($argv);
         $this->_checkArguments();
         $this->_checkInit();
         $this->_dispatch();
     }
-    
-    public function errorHandle($errno, $errmsg)
-    {
-        if($errno == E_ERROR or $errno == E_USER_ERROR) {
-            throw new Exception($errmsg, 2);
-        }
-        
-        if($errno == E_WARNING or $errno == E_USER_WARNING) {
-            throw new Exception($errmsg, 1);
-        }
-    }
 
     protected function _init()
     {
+        $this->_initErrorHandle();
+
         $argv = $_SERVER['argv'];
         $this->_scriptPath = fs\path\standard($argv[0]);
 
@@ -611,6 +795,24 @@ class CommandBase
         if(!$this->isModuleAvailable($module)) {
             $this->errorDie("This module '%s' is not available", $module);
         }
+    }
+
+    protected function _packGlobalOptionsToStr()
+    {
+        $array = [];
+        foreach($this->_globalOptionsSupports as $key) {
+            if(isset($this->_commandOptions[$key])) {
+                $array []= $key;
+
+                $val = $this->_commandOptions[$key];
+
+                if(!is_bool($val) && !empty($val)) {
+                    $array []= "$val";
+                }
+            }
+        }
+
+        return implode(" ", $array);
     }
 
     protected function _checkInit()
@@ -654,6 +856,19 @@ class CommandBase
         }
 
         return $result;
+    }
+
+    protected function _initErrorHandle()
+    {
+        set_error_handler(function($errno, $errmsg) {
+            if($errno == E_ERROR or $errno == E_USER_ERROR) {
+                throw new Exception($errmsg, 2);
+            }
+
+            if($errno == E_WARNING or $errno == E_USER_WARNING) {
+                throw new Exception($errmsg, 1);
+            }
+        });
     }
 
     protected function _getAllModules($wildcard) {
@@ -768,7 +983,7 @@ class CommandBase
             $this->warning($e->getMessage() . $subfixMsg);
         }
     }
-    
+
     protected function _deployModule($module)
     {
         if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
@@ -879,7 +1094,7 @@ class CommandBase
             return null;
         }
 
-        $mappingTems = explode("\n", $content);
+        $mappingTems = array_filter(array_map("trim", explode("\n", $content)));
         $mappings = [];
 
         foreach($mappingTems as $mapping) {
@@ -905,7 +1120,7 @@ class CommandBase
         $valueEscapeKey = '';
 
         for($i=0; $i<$argc; $i++) {
-            $arg = $argv[$i];
+            $arg = trim($argv[$i]);
 
             if($arg == '--') {
                 for($j=$i+1; $j<$argc; $j++) {

@@ -15,6 +15,34 @@ namespace fs {
         return true;
     }
 
+    /**
+     * 判断是否为空目录
+     * @param $path string 指定的路径
+     * @return bool 非空目录和非目录均返回false
+     */
+    function isempty($path) {
+        if(!is_dir($path)) {
+            return false;
+        }
+
+        $dir = opendir($path);
+        while(false !== ( $file = readdir($dir)) ) {
+            if(!in_array($file, ['.', '..'])) {
+                closedir($dir);
+                return false;
+            }
+        }
+
+        closedir($dir);
+        return true;
+    }
+
+    function rmempty($path) {
+        if(isempty($path)) {
+
+        }
+    }
+
     function subdirs($dir) {
         $result = [];
 
@@ -78,18 +106,20 @@ namespace fs {
     function symlink($linkpath, $target) {
         if(PHP_OS == 'WINNT') {
             $params = ' ';
-        
+
             if(isdir($target)) {
                 $params = ' /D ';
             }
-        
+
             $linkpath = str_replace('/', '\\', $linkpath);
             $target = str_replace('/', '\\', $target);
             $output = [];
             $result = 2;
+            // $sudo = sprintf('wscript "%s"', \dirname($_SERVER['argv'][0]) . '/' . 'sudo.vbs');
+            // $mklink = sprintf('"%s"', \dirname($_SERVER['argv'][0]) . '/' . 'mklink.bat');
             $cmd = sprintf('mklink%s"%s" "%s" 2>&1', $params, $linkpath, $target);
             exec($cmd, $output, $result);
-           
+
             if($result == 0) {
                 return true;
             } else {
@@ -241,7 +271,7 @@ namespace io {
     function readfile($path) {
         return file_get_contents($path);
     }
-    
+
     function endline() {
         if(PHP_OS == 'WINNT') {
             return "\r\n";
