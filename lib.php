@@ -184,6 +184,38 @@ namespace fs\path {
         $paths = array_filter(func_get_args());
         return standard(implode('/', $paths));
     }
+    
+    function absolute($path) {
+        if(empty($path)) {
+            return standard(getcwd());
+        }
+        
+        $path = standard($path);
+        
+        if(!preg_match("#^/|^[^/]:#", $path)) {
+            $path = standard(join(getcwd(), $path));
+        }
+        
+        list($root, $path) = explode('/', $path, 2);
+        $root .= '/';
+        
+        if(empty($path)) {
+            return $root;
+        }
+
+        $path = preg_replace('#/\./(\./)*#', '/', $path);
+        $path = preg_replace('#(/\.)+$#', '', $path);
+        
+        while(preg_match('#[^/]+/\.\./#', $path)) {
+            $path = preg_replace('#[^/]+/\.\./#', '', $path, 1);
+        }
+        
+        $path = preg_replace('#[^/]+/\.\.$#', '', $path);
+        $path = preg_replace('#^(\.\./)+#', '', $path);
+        $path = preg_replace('#^\.\.$#', '', $path);
+        $path = preg_replace('#^\.$#', '', $path);
+        return $root . (empty($path) ? '' : $path);
+    }
 
     function standard($path) {
         $path = trim(str_replace('\\', '/', $path));
