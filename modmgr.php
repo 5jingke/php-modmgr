@@ -757,7 +757,7 @@ class App extends BaseApp
                         $linkreal = realpath($targetFullPath);
 
                         if($linkreal) {
-                            if(fs\path\join($this->_modulePath, $module, $source) == fs\path\standard($linkreal)) {
+                            if(fs\path\standard(realpath(fs\path\join($this->_modulePath, $module, $source))) == fs\path\standard($linkreal)) {
                                 $status = "{$this->crLSkyblue()}(D){$this->crNull()} ";
                                 $dc ++;
                             }
@@ -774,7 +774,8 @@ class App extends BaseApp
             }
         }
 
-        $this->outputLine("{$this->crLWhite()}%s {$this->crGray()}[{$this->crLGreen()}%d{$this->crGray()}+{$this->crLRed()}%d{$this->crGray()}={$this->crLWhite()}%d{$this->crGray()}]{$this->crNull()}",
+        $incompleteStr = $all != $dc ? " {$this->crGray()}(incomplete){$this->crNull()}" : "";
+        $this->outputLine("{$this->crLWhite()}%s {$this->crGray()}[{$this->crLGreen()}%d{$this->crGray()}+{$this->crLRed()}%d{$this->crGray()}={$this->crLWhite()}%d{$this->crGray()}]{$this->crNull()}$incompleteStr",
             $module, $dc, $all-$dc, $all);
 
         $showDetail = false;
@@ -855,7 +856,7 @@ class App extends BaseApp
 
         foreach ($modules as $module) {
             $cmd = sprintf('git %s', implode(' ', $args));
-            $this->outputLine("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()} > {$this->crGray()}%s{$this->crNull()}\n", $module, $cmd);
+            $this->outputLine("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()} > {$this->crGray()}%s{$this->crNull()}", $module, $cmd);
             $moduleParent = fs\path\join($this->_modulePath, $module);
             chdir($moduleParent);
             system($cmd);
