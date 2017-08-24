@@ -466,7 +466,7 @@ class App extends BaseApp
                 $commandList [$i] = $_command;
             }
 
-            $commands = '      '.implode("\n       ", $commandList);
+            $commands = '      '.implode(io\endline() . "       ", $commandList);
             $command = '-';
         } else if(!isset($this->_commondList[$command])) {
             return $this->input("Command '%s' not found", $command);
@@ -484,13 +484,13 @@ class App extends BaseApp
         $detail = $docs[$command]['detail'];
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
-        $this->outputLine($detail . "\n");
+        $this->outputLine($detail . io\endline());
         
         if($command == '-') {
             $this->output(
                 " %s, %s", 
                 "{$this->crGray()}Power by {$this->crGreen()}Jinko Wu{$this->crGray()}. If you have any suggestions or comments",
-                "please send it to me by email {$this->crGreen()}jk@5jk.me{$this->crNull()}\n"
+                "please send it to me by email {$this->crGreen()}jk@5jk.me{$this->crNull()}".io\endline()
             );
         }
         
@@ -1409,7 +1409,7 @@ abstract class BaseApp extends BaseOutputInput
 {
     protected $_commondList = [];
     protected $_noNeedToInit = ['help', 'version', 'initialize', 'persistent', 'cwd',
-        'elevate-privileges', 'clean', 'list', 'show'];
+        'elevate-privileges', 'clean', 'show'];
 
     protected $_command;
     protected $_targetCommand;
@@ -1639,7 +1639,7 @@ abstract class BaseApp extends BaseOutputInput
 
         foreach ($mappings as $source => $target) {
             if($str != '') {
-                $str .= "\n";
+                $str .= io\endline();
             }
 
             if($source == $target) {
