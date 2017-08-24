@@ -184,52 +184,55 @@ namespace fs\path {
         $paths = array_filter(func_get_args());
         return standard(implode('/', $paths));
     }
-    
+
     function absolute($path) {
         if(empty($path)) {
             return standard(getcwd());
         }
-        
+
         $path = standard($path);
-        
+
         if(!preg_match("#^/|^[^/]:#", $path)) {
             $path = standard(join(getcwd(), $path));
         }
-        
+
         list($root, $path) = explode('/', $path, 2);
         $root .= '/';
-        
+
         if(empty($path)) {
             return $root;
         }
 
-        $path = preg_replace('#/\./(\./)*#', '/', $path);
-        $path = preg_replace('#(/\.)+$#', '', $path);
-        
-        while(preg_match('#[^/]+/\.\./#', $path)) {
-            $path = preg_replace('#[^/]+/\.\./#', '', $path, 1);
+        $pathSegment = explode("/", $path);
+        $newSegment = [];
+
+        foreach ($pathSegment as $seg) {
+            if($seg == '.' or $seg == '') {
+                continue;
+            }
+
+            if($seg == '..') {
+                array_pop($newSegment);
+                continue;
+            }
+
+            array_push($newSegment, $seg);
         }
-        
-        $path = preg_replace('#[^/]+/\.\.$#', '', $path);
-        $path = preg_replace('#^(\.\./)+#', '', $path);
-        $path = preg_replace('#^\.\.$#', '', $path);
-        $path = preg_replace('#^\.$#', '', $path);
-        return $root . (empty($path) ? '' : $path);
+
+        return $root . standard(implode("/", $newSegment));
     }
 
     function standard($path) {
         $path = trim(str_replace('\\', '/', $path));
         $path = str_replace('://', chr(1), $path);
         $path = preg_replace('#/{2,}#', '/', $path);
-        $path = rtrim(str_replace(chr(1), '://', $path), '/');
-        return $path == '' ? '/' : $path;
+        return $path == '/' ? '/' : rtrim(str_replace(chr(1), '://', $path), '/');
     }
 
     function subpath($parent, $sub) {
         $parent = standard($parent);
         $sub = standard($sub);
         $subpath = substr($sub, strlen($parent));
-
         return $subpath[0] == '/' ? ltrim($subpath, '/') : false;
     }
 
