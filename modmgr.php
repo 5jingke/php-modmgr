@@ -1,8 +1,12 @@
 <?php
 /**
- * modmgr php版本
- * -------------------------
+ * Module Manager PHP Edition
+ * @autor JinkoWu
+ * @email jk@5jk.me
+ * -------------------------------------------------------------------------
  * @modmgr-help
+ * Module Manager PHP Edition
+ *
  * Usage: modmgr [command] [commandArguments] [options] [-- [commandArguments]]
  *
  * command:
@@ -25,18 +29,20 @@
  *
  * Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
  *
- * @modmgr-help-help
- * Usage: modmgr help [command]
  *
+ * @modmgr-help-help
  * @d Show detailed help documentation for a command
+ *
+ * Usage: modmgr help [command]
  *
  * Such as `modmgr help deploy`
  *
+ *
  * @modmgr-help-list
+ * @d List the modules that matching wildcard
+ *
  * Usage: modmgr list [wildcard] [-as]
  *        modmgr l [wildcard] [-as]
- *
- * @d List the modules that matching wildcard
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
@@ -49,11 +55,12 @@
  *         If this option is not specified, only available modules will be listed
  *     -s: Simple mode.
  *
+ *
  * @modmgr-help-deploy
+ * @d Deploy modules which matches the wildcard
+ *
  * Usage: modmgr deploy [wildcard] [-facy]
  *        modmgr d [wildcard] [-facy]
- *
- * @d Deploy modules which matches the wildcard
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
@@ -65,11 +72,12 @@
  *     -c: Copy files or folders directly instead of creating symbolic links
  *     -y: Does not display confirm message when operating on multiple modules
  *
+ *
  * @modmgr-help-undeploy
+ * @d Undeploy modules which matches the wildcard
+ *
  * Usage: modmgr undeploy [wildcard] [-fcy]
  *        modmgr ud [wildcard] [-fcy]
- *
- * @d Undeploy modules which matches the wildcard
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
@@ -81,10 +89,11 @@
  *         If this option is not specified, only symbocli links will be removed
  *     -y: Does not display confirm message when operating on multiple modules
  *
- * @modmgr-help-clean
- * Usage: modmgr clean [path] [-d]
  *
+ * @modmgr-help-clean
  * @d Clean broken symbocli links and empty directory tree
+ *
+ * Usage: modmgr clean [path] [-d]
  *
  * path:
  *     Specify a path to do cleaning
@@ -92,10 +101,11 @@
  * option:
  *     -d: Remove empty tree at the same time
  *
- * @modmgr-help-git
- * Usage: modmgr git [wildcard] [-y] [gitArguments] [-- gitArguments]
  *
+ * @modmgr-help-git
  * @d Run git command in module path
+ *
+ * Usage: modmgr git [wildcard] [-y] [gitArguments] [-- gitArguments]
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
@@ -107,10 +117,11 @@
  * gitArguments:
  *     Pass to the git such as pull or push and so on.
  *
- * @modmgr-help-clone
- * Usage: modmgr clone [gitRepoUri] [-fn]
  *
+ * @modmgr-help-clone
  * @d Use `git clone` command to clone remote repository into .modman directory
+ *
+ * Usage: modmgr clone [gitRepoUri] [-fn]
  *
  * gitRepoUri:
  *    Git remote repository such as ssh://xxx or https://xxxx
@@ -120,10 +131,11 @@
  *     -n: Only clone repository and don't deploy module.
  *         If this option is not specified, the module just cloned will be deployed immediately
  *
- * @modmgr-help-show
- * Usage: modmgr show [item] [-av]
  *
+ * @modmgr-help-show
  * @d Show item value of modmgr application
+ *
+ * Usage: modmgr show [item] [-av]
  *
  * item:
  *     Item key to show. If this arguments missing all item key will be showed
@@ -132,26 +144,29 @@
  *     -a: Show all item key
  *     -v: Show item value, must be used with '-a' at the same time
  *
+ *
  * @modmgr-help-version
+ * @d Show modmgr version
+ *
  * Usage: modmgr version [-s]
  *        modmgr ver [-s]
  *        modmgr v [-s]
  *
- * @d Show modmgr version
- *
  * option:
  *     -s: Simple mode
  *
+ *
  * @modmgr-help-initialize
+ * @d Initialize the directory
+ *
  * Usage: modmgr initialize
  *        modmgr init
  *
- * @d Initialize the directory
  *
  * @modmgr-help-mapadd
- * Usage: modmgr mapadd [module] [path] [-f] [--map source [target]]
- *
  * @d Add a mapping to the module mapping file
+ *
+ * Usage: modmgr mapadd [module] [path] [-f] [--map source [target]]
  *
  * module:
  *     Module which you wish to operate
@@ -167,10 +182,11 @@
  *  e.g. modmgr mapadd test app/1.txt --map app/t2.txt -f
  *  e.g. modmgr mapadd test app/1.txt -f
  *
- * @modmgr-help-map
- * Usage: modmgr map [wildcard] [-as]
  *
+ * @modmgr-help-map
  * @d Show mappings of modules
+ *
+ * Usage: modmgr map [wildcard] [-as]
  *
  * Mapping status format is [deployed+undeployed=total]
  * '(D)' flag means the reocrd of mapping was deployed
@@ -183,19 +199,21 @@
  *     -a: Show mappings of all module
  *     -s: Simple mode. Only show mapping status of module
  *
- * @modmgr-help-mapdel
- * Usage: modmgr mapdel [mapping-id]
  *
+ * @modmgr-help-mapdel
  * @d Delete a mapping record of a module
+ *
+ * Usage: modmgr mapdel [mapping-id]
  *
  * mapping-id:
  *     It is a number and show in `modmgr map` command.
  *
+ *
  * @modmgr-help-persistent
+ * @d Into persistent mode.
+ *
  * Usage: modmgr persistent [--admin-shell shellapp] [--cwd path]
  *        modmgr pss [--admin-shell shellapp] [--cwd path]
- *
- * @d Into persistent mode.
  *
  * In persistent mode, you can type any command without 'modmgr'
  *
@@ -205,11 +223,12 @@
  *                    git-bash.exe parent path to you 'path' of environment variable.
  *     --cwd: Set the working directory
  *
+ *
  * @modmgr-help-elevate-privileges
+ * @d Elevate privileges of shell application
+ *
  * Usage: modmgr elevate-privileges [shell] [--cwd path]
  *        modmgr ep [shell] [--cwd path]
- *
- * @d Elevate privileges of shell application
  *
  * shell:
  *     Use new shell application to elevate privileges. Allow 'cmd', 'powershell' and 'gitbash'.
@@ -219,29 +238,33 @@
  * option:
  *     --cwd: Set the working directory
  *
+ *
  * @modmgr-help-cwd
+ * @d Show current working directory
+ *
  * Usage: modmgr cwd
  *
- * @d Show current working directory
  *
  * @modmgr-help-exit
  * @d Exit persistent mode.
  *
  * This command only available in persistent mode.
  *
- * @modmgr-help-create
- * Usage: modmgr craete [moduleName]
  *
+ * @modmgr-help-create
  * @d Create a module
+ *
+ * Usage: modmgr craete [moduleName]
  *
  * moduleName:
  *     Specified module name
  *
+ *
  * @modmgr-help-remove
+ * @d Remove a module from module directory
+ *
  * Usage: modmgr remove [wildcard] [-d]
  *        modmgr rm [moduleName] [-d]
- *
- * @d Remove a module from module directory
  *
  * moduleName:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
@@ -249,11 +272,34 @@
  *
  * option:
  *     -d: Undeploy before remove
+ *
+ *
+ * @modmgr-help-disable
+ * @d Disable a module
+ *
+ * Usage: modmgr disable [wildcard]
+ *
+ * wildcard:
+ *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *      This argument can't be empty. You can use '*' to filter out all modules
+ *
+ *
+ * @modmgr-help-enable
+ * @d Enable a module
+ *
+ * Usage: modmgr enable [wildcard]
+ *
+ * wildcard:
+ *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *      This argument can't be empty. You can use '*' to filter out all modules
+ *
+ *
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
+define('MODMGR_DISABLED', '.modmgr.disabled');
 
 error_reporting(ERROR_REPORTING);
 require_once 'lib.php';
@@ -375,6 +421,8 @@ class App extends BaseApp
 
         'remove' => ['d'],
         'rm' => 'remove',
+        'disable' => [],
+        'enable' => [],
     ];
 
     protected $_isPersistentMode = false;
@@ -414,7 +462,7 @@ class App extends BaseApp
         $detail = $docs[$command]['detail'];
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
-        return $this->outputLine($detail);
+        return $this->outputLine($detail . "\n");
     }
 
     protected function _command_cwd()
@@ -599,16 +647,13 @@ class App extends BaseApp
         }
 
         if(!empty($modules)) {
-            if($this->existsOption('t')) {
-                foreach ($modules as $m) {
-                    if($this->isModuleAvailable($m)) {
-                        $this->outputLine("%s", $m);
-                    } else {
-                        $this->outputLine("{$this->crLYellow()}%s{$this->crNull()}", $m);
-                    }
+            foreach ($modules as $m) {
+                if($this->isModuleAvailable($m)) {
+                    $this->outputLine("%s", $m);
+                } else {
+                    $this->outputLine("{$this->crLYellow()}%s{$this->crNull()}%s",
+                        $m, (!$this->existsOption('s') and $this->isModuleDisabled($m)) ? " {$this->crGray()}(disabled){$this->crNull()}": "");
                 }
-            } else {
-                $this->outputLine("{$this->crLWhite()}%s{$this->crNull()}", str\stringformat($modules));
             }
         }
 
@@ -1040,6 +1085,72 @@ class App extends BaseApp
 
         return true;
     }
+
+    protected function _command_disable($args)
+    {
+        if (empty($args)) {
+            return $this->errorLine("Missing a module name or wildcard.");
+        }
+
+        $wildcard = $args[0];
+
+        if(empty($wildcard)) {
+            return $this->error("Missing a module name");
+        }
+
+        $modules = $this->_getAvailableModules($wildcard);
+
+        if(!$this->multiModulesConfirm(count($modules), 'disabled')) {
+            return false;
+        }
+
+        if (empty($modules)) {
+            return $this->infoLine("Parameter '%s' does not match any enabled module.", $wildcard);
+        }
+
+        foreach ($modules as $module) {
+            $this->_disableModule($module);
+        }
+
+        return true;
+    }
+
+    protected function _command_enable($args)
+    {
+        if (empty($args)) {
+            return $this->errorLine("Missing a module name or wildcard.");
+        }
+
+        $wildcard = $args[0];
+
+        if(empty($wildcard)) {
+            return $this->error("Missing a module name");
+        }
+
+        $modules = $this->_getAllModules($wildcard);
+
+        foreach($modules as $i => $m) {
+            if(!$this->isModuleDisabled($m)) {
+                unset($modules[$i]);
+            }
+        }
+
+        $modules = array_values($modules);
+
+        if(!$this->multiModulesConfirm(count($modules), 'enabled')) {
+            return false;
+        }
+
+        if (empty($modules)) {
+            return $this->infoLine("Parameter '%s' does not match any disabled module.", $wildcard);
+        }
+
+        foreach ($modules as $module) {
+            $this->_enableModule($module);
+        }
+
+        return true;
+    }
 }
 
 /**
@@ -1285,6 +1396,10 @@ abstract class BaseApp extends BaseOutputInput
             return false;
         }
 
+        if(empty($this->_command)) {
+            $this->_setCommand('help');
+        }
+
         if(!$this->_checkArguments()) {
             return false;
         }
@@ -1292,9 +1407,7 @@ abstract class BaseApp extends BaseOutputInput
         if($this->existsOption('--help')) {
             if($this->_targetCommand != 'help') {
                 $this->_commandArguments = [$this->_targetCommand];
-                $this->_targetCommand = 'help';
-                $this->_command = "help";
-                $this->_commandEscape = "help";
+                $this->_setCommand('help');
             }
         }
 
@@ -1313,19 +1426,24 @@ abstract class BaseApp extends BaseOutputInput
 
         unset($argv[0]);
 
-        $this->_command = $argv[1];
-        $this->_targetCommand = $this->_getTargetCommand();
+        // $this->_setCommand($argv[0]);
+        // unset($argv[1]);
+
+        $this->_findModulePath();
+
+        return $argv;
+    }
+
+    protected function _setCommand($command)
+    {
+        $this->_command = $command;
+        $this->_targetCommand = $this->_getTargetCommand($command);
 
         if(empty($this->_command)) {
             $this->_command = $this->_targetCommand;
         }
 
         $this->_commandEscape = $this->_escapeCommand($this->_targetCommand);
-        unset($argv[1]);
-
-        $this->_findModulePath();
-
-        return $argv;
     }
 
     protected function _escapeCommand($command)
@@ -1410,6 +1528,43 @@ abstract class BaseApp extends BaseOutputInput
         });
     }
 
+    protected function _disableModule($module)
+    {
+        $modulePath = fs\path\join($this->_modulePath, $module);
+        $disabledFile = fs\path\join($modulePath, MODMGR_DISABLED);
+
+        if(fs\exists($disabledFile)) {
+            return $this->infoLine("The module '%s' had already been disabled", $module);
+        }
+
+        try {
+            file_put_contents($disabledFile, 'MODMGR ' . MODMGR_VERSION);
+            $this->successLine("Module '%s' has been disabled", $module);
+        } catch (Exception $e) {
+            return $this->_processException($e);
+        }
+
+        return true;
+    }
+
+    protected function _enableModule($module) {
+        $modulePath = fs\path\join($this->_modulePath, $module);
+        $disabledFile = fs\path\join($modulePath, MODMGR_DISABLED);
+
+        if(!fs\exists($disabledFile)) {
+            return $this->infoLine("The module '%s' had already been enabled", $module);
+        }
+
+        try {
+            fs\rm($disabledFile);
+            $this->successLine("Module '%s' has been enabled", $module);
+        } catch (Exception $e) {
+            return $this->_processException($e);
+        }
+
+        return true;
+    }
+
     protected function _getAllModules($wildcard) {
         $result = [];
 
@@ -1428,6 +1583,10 @@ abstract class BaseApp extends BaseOutputInput
     }
 
     public function isModuleAvailable($module) {
+        if($this->isModuleDisabled($module)) {
+            return false;
+        }
+
         $mappings = $this->_getModuleMapping($module);
 
         if(empty($mappings)) {
@@ -1435,6 +1594,10 @@ abstract class BaseApp extends BaseOutputInput
         }
 
         return true;
+    }
+
+    public function isModuleDisabled($module) {
+        return fs\exists(fs\path\join($this->_modulePath, $module, MODMGR_DISABLED));
     }
 
     protected function _translateMappingArrayToString($mappings)
@@ -1695,6 +1858,11 @@ abstract class BaseApp extends BaseOutputInput
                     $this->_options[$key] = true;
                 }
             } else {
+                if(empty($this->_command)) {
+                    $this->_setCommand($arg);
+                    continue;
+                }
+
                 $value = $this->_processingValue(trim($arg));
                 $valueMethod = "_processingValue_{$this->_commandEscape}";
 
@@ -1747,9 +1915,7 @@ abstract class BaseApp extends BaseOutputInput
 
     protected function _getTargetCommand($command=null)
     {
-        if(!$command) {
-            $command = strval($this->_command);
-        }
+        $command = strval($command);
 
         while(is_string($this->_commondList[$command])) {
             $newCommand = $this->_commondList[$command];
