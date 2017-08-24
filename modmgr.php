@@ -19,7 +19,7 @@
  * @see App::_command_map
  * @see App::_command_mapdel
  * @see App::_command_git
- * @see App::_command_elevate_privileges
+ * @see App::_command_elev_priv
  * @see App::_command_clone
  * @see App::_command_clean
  * @see App::_command_remove
@@ -247,7 +247,7 @@
  *     --cwd: Set the working directory
  *
  *
- * @modmgr-help-elevate-privileges
+ * @modmgr-help-elev-priv
  * @d Elevate privileges of shell application
  *
  * Usage: modmgr elevate-privileges [shell] [--cwd path]
@@ -430,10 +430,10 @@ class App extends BaseApp
         'pss' => 'persistent',
 
         /**
-         * @see _command_elevate_privileges
+         * @see _command_elev_priv
          */
-        'elevate-privileges' => ['--cwd'],
-        'ep' => 'elevate-privileges',
+        'elev-priv' => ['--cwd'],
+        'ep' => 'elev-priv',
 
         /**
          * @see _command_cwd
@@ -460,9 +460,12 @@ class App extends BaseApp
 
         if(empty($command)) {
             $commandList = array_filter(array_keys($this->_commondList));
-
+            $maxLength = ary\maxlength($commandList);
+            
             foreach($commandList as $i => $_command) {
-                $_command = "{$this->crLSkyblue()}$_command  {$this->crGray()}". $docs[$this->_getTargetCommand($_command)]['simple'] . "{$this->crNull()}" ;
+                $_command = sprintf("{$this->crLSkyblue()}%-{$maxLength}s  {$this->crGray()}%s{$this->crNull()}",
+                    $_command, $docs[$this->_getTargetCommand($_command)]['simple']
+                );
                 $commandList [$i] = $_command;
             }
 
@@ -941,7 +944,7 @@ class App extends BaseApp
         }
     }
 
-    protected function _command_elevate_privileges($args) {
+    protected function _command_elev_priv($args) {
         if(PHP_OS != "WINNT") {
             return;
         }
@@ -1304,15 +1307,14 @@ abstract class BaseOutputInput extends BaseOptionSupport
 
         $args = func_get_args();
         $content = $args[0];
-
+        $args[0] = (string)$content;
+        $content = call_user_func_array('sprintf', $args);
+        
         if($this->existsOption('--nocolor')) {
             $content = preg_replace("#\033\[([01];)?([0-9]{1,2};)?[0-9]{1,2}m#", '', $content);
-        } else {
-            $args[0] = (string)$content;
         }
 
-        $args[0] = $content;
-        echo call_user_func_array('sprintf', $args);
+        echo $content;
         return null;
     }
 
@@ -1409,7 +1411,7 @@ abstract class BaseApp extends BaseOutputInput
 {
     protected $_commondList = [];
     protected $_noNeedToInit = ['help', 'version', 'initialize', 'persistent', 'cwd',
-        'elevate-privileges', 'clean', 'show'];
+        'elev-priv', 'clean', 'show'];
 
     protected $_command;
     protected $_targetCommand;

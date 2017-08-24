@@ -345,6 +345,21 @@ namespace ary {
             }
         }
     }
+    
+    function maxlength($array)
+    {
+        $max = 0;
+        
+        foreach($array as $ary) {
+            $len = strlen((string)$ary);
+            
+            if($max <= $len) {
+                $max = $len;
+            }    
+        }
+        
+        return $max;
+    }
 
     function concat()
     {
