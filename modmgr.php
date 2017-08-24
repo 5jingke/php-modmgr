@@ -6,17 +6,24 @@
  * Usage: modmgr [command] [commandArguments] [options] [-- [commandArguments]]
  *
  * command:
- *     MODMGR supports commands bellow:
+ *     MODMGR support commands bellow:
  *
  * {$commands}
  *
- *     You can use `modmgr help [command]` or `modmgr [command] --help` to get the command help you need
- *
  * commandArguments:
- *     Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
+ *     Any charater after '--' will be processed as argumens
  *
  * options:
- *     Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
+ *     Long option can receive one or more values, such as --file path.
+ *     Short option only use single letter and it can be made up of one or more '-', such as '-abcd' Equivalent to '-a' '-b' '-c' '-d'.
+ *     Short option only use as a bool value.
+ *
+ *     There are global option bellow:
+ *     --nocolor: Any out without color
+ *     --nooutput: Don't output any message
+ *     --help: Show help documentation of a command
+ *
+ * Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
  *
  * @modmgr-help-help
  * Usage: modmgr help [command]
@@ -32,7 +39,7 @@
  * @d List the modules that matching wildcard
  *
  * wildcard:
- *     [wildcard] use '*' to match any character, use '?' to match one character
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
  *     If [wildcard] is not specified, the default is '*'
  *
  *     e.g. `modmgr list "mod_ave*"` matchs all modules that begin with 'mod_ave'
@@ -49,7 +56,7 @@
  * @d Deploy modules which matches the wildcard
  *
  * wildcard:
- *     [wildcard] use '*' to match any character, use '?' to match one character
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
  *     If [wildcard] is not specified, the default is '*'
  *
  * options:
@@ -65,7 +72,7 @@
  * @d Undeploy modules which matches the wildcard
  *
  * wildcard:
- *     [wildcard] use '*' to match any character, use '?' to match one character.
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
  *     If [wildcard] is not specified, the default is '*'
  *
  * options:
@@ -80,7 +87,168 @@
  * @d Clean broken symbocli links and empty directory tree
  *
  * path:
+ *     Specify a path to do cleaning
  *
+ * option:
+ *     -d: Remove empty tree at the same time
+ *
+ * @modmgr-help-git
+ * Usage: modmgr git [wildcard] [-y] [gitArguments] [-- gitArguments]
+ *
+ * @d Run git command in module path
+ *
+ * wildcard:
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *     This argument can't be empty. You can use '*' to filter out all modules
+ *
+ * option:
+ *     -y: Does not display confirm message when operating on multiple modules
+ *
+ * gitArguments:
+ *     Pass to the git such as pull or push and so on.
+ *
+ * @modmgr-help-clone
+ * Usage: modmgr clone [gitRepoUri] [-fn]
+ *
+ * @d Use `git clone` command to clone remote repository into .modman directory
+ *
+ * gitRepoUri:
+ *    Git remote repository such as ssh://xxx or https://xxxx
+ *
+ * option:
+ *     -f: Force clone. Remove exists folder from .modman directory
+ *     -n: Only clone repository and don't deploy module.
+ *         If this option is not specified, the module just cloned will be deployed immediately
+ *
+ * @modmgr-help-show
+ * Usage: modmgr show [item] [-av]
+ *
+ * @d Show item value of modmgr application
+ *
+ * item:
+ *     Item key to show. If this arguments missing all item key will be showed
+ *
+ * option:
+ *     -a: Show all item key
+ *     -v: Show item value, must be used with '-a' at the same time
+ *
+ * @modmgr-help-version
+ * Usage: modmgr version [-s]
+ *        modmgr ver [-s]
+ *        modmgr v [-s]
+ *
+ * @d Show modmgr version
+ *
+ * option:
+ *     -s: Simple mode
+ *
+ * @modmgr-help-initialize
+ * Usage: modmgr initialize
+ *        modmgr init
+ *
+ * @d Initialize the directory
+ *
+ * @modmgr-help-mapadd
+ * Usage: modmgr mapadd [module] [path] [-f] [--map source [target]]
+ *
+ * @d Add a mapping to the module mapping file
+ *
+ * module:
+ *     Module which you wish to operate
+ *
+ * path:
+ *     The file or folder will be copyed to module directory
+ *
+ * optins:
+ *     -f: Force add. Recover exists mapping record
+ *     --map: Custom mapping. If this option missing, the source and target will use the value of 'path' argument
+ *
+ *  e.g. modmgr mapadd test app/1.txt --map app/t.txt app/t2.txt -f
+ *  e.g. modmgr mapadd test app/1.txt --map app/t2.txt -f
+ *  e.g. modmgr mapadd test app/1.txt -f
+ *
+ * @modmgr-help-map
+ * Usage: modmgr map [wildcard] [-as]
+ *
+ * @d Show mappings of modules
+ *
+ * Mapping status format is [deployed+undeployed=total]
+ * '(D)' flag means the reocrd of mapping was deployed
+ *
+ * wildcard:
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *     If [wildcard] is not specified, the default is '*'
+ *
+ * option:
+ *     -a: Show mappings of all module
+ *     -s: Simple mode. Only show mapping status of module
+ *
+ * @modmgr-help-mapdel
+ * Usage: modmgr mapdel [mapping-id]
+ *
+ * @d Delete a mapping record of a module
+ *
+ * mapping-id:
+ *     It is a number and show in `modmgr map` command.
+ *
+ * @modmgr-help-persistent
+ * Usage: modmgr persistent [--admin-shell shellapp] [--cwd path]
+ *        modmgr pss [--admin-shell shellapp] [--cwd path]
+ *
+ * @d Into persistent mode.
+ *
+ * In persistent mode, you can type any command without 'modmgr'
+ *
+ * option:
+ *     --admin-shell: Use new shell application to elevate privileges. Allow 'cmd', 'powershell' and 'gitbash'.
+ *                    This option only available in Window System. If you need to use gitbash, you must add the
+ *                    git-bash.exe parent path to you 'path' of environment variable.
+ *     --cwd: Set the working directory
+ *
+ * @modmgr-help-elevate-privileges
+ * Usage: modmgr elevate-privileges [shell] [--cwd path]
+ *        modmgr ep [shell] [--cwd path]
+ *
+ * @d Elevate privileges of shell application
+ *
+ * shell:
+ *     Use new shell application to elevate privileges. Allow 'cmd', 'powershell' and 'gitbash'.
+ *     This argument only available in Window System. If you need to use gitbash, you must add the
+ *     git-bash.exe parent path to you 'path' of environment variable.
+ *
+ * option:
+ *     --cwd: Set the working directory
+ *
+ * @modmgr-help-cwd
+ * Usage: modmgr cwd
+ *
+ * @d Show current working directory
+ *
+ * @modmgr-help-exit
+ * @d Exit persistent mode.
+ *
+ * This command only available in persistent mode.
+ *
+ * @modmgr-help-create
+ * Usage: modmgr craete [moduleName]
+ *
+ * @d Create a module
+ *
+ * moduleName:
+ *     Specified module name
+ *
+ * @modmgr-help-remove
+ * Usage: modmgr remove [wildcard] [-d]
+ *        modmgr rm [moduleName] [-d]
+ *
+ * @d Remove a module from module directory
+ *
+ * moduleName:
+ *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *     This argument can't be empty. You can use '*' to filter out all modules
+ *
+ * option:
+ *     -d: Undeploy before remove
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
@@ -118,55 +286,39 @@ class App extends BaseApp
 
         /**
          * @see _command_list
-         * a: 显示全部模块
-         * s: 简单模式
          */
         'list' => ['a', 's'],
         'l' => 'list',
 
         /**
          * @see _command_deploy
-         * 部署模块
-         * f: 强制部署代码。删除已存在的文件或链接
-         * a: 部署代码链接时，使用绝对路径创建链接。（如果指定了 -c 选项，则此选项会被忽略）
-         * c: 复制文件或目录进行部署，而不是创建符号链接
-         * y: 忽略多模块时的确认信息
          */
         'deploy' => ['f', 'a', 'c', 'y'],
         'd' => 'deploy',
 
         /**
          * @see _command_undeploy
-         * f: 强制卸载模块，删除链接或文件
-         * y: 忽略多模块时的确认信息
          */
         'undeploy' => ['f', 'y', 'c'],
         'ud' => 'undeploy',
 
         /**
          * @see _command_clean
-         * 清除无效的链接
-         * d: 同时清除空目录树
          */
         'clean' => ['d'],
 
         /**
          * @see _command_git
-         * y: 忽略多模块时的确认信息
          */
         'git' => ['y'],
 
         /**
          * @see _command_clone
-         * f: 强制克隆，删除已存在的目录
-         * n: 只克隆代码， 不进行部署
          */
         'clone' => ['f', 'n'],
 
         /**
          * @see _command_show
-         * a: 显示所有程序变量名
-         * v: 显示值
          */
         'show' => ['a', 'v'],
 
@@ -186,22 +338,15 @@ class App extends BaseApp
 
         /**
          * @see _command_create
-         * 创建模块
          */
         'create' => [],
 
         /**
          * @see _command_mapadd
-         * 添加模块映射
-         * --map: 指定映射
-         * f: 覆盖已存在的map
          */
         'mapadd' => ['--map', 'f'],
         /**
          * @see _command_map
-         * 显示模块的映射
-         * s: 简单模式
-         * a: 显示绝对路径
          */
         'map' => ['s', 'a'],
 
@@ -212,25 +357,24 @@ class App extends BaseApp
 
         /**
          * @see _command_persistent
-         * 常驻模式
-         * --admin-shell: 提升权限并在指定的shell中运行. 默认 cmd, 支持powershell
-         * --cwd: 指定工作目录
          */
         'persistent' => ['--admin-shell', '--cwd'],
         'pss' => 'persistent',
 
         /**
          * @see _command_elevate_privileges
-         * 提升权限
          */
         'elevate-privileges' => ['--cwd'],
         'ep' => 'elevate-privileges',
 
         /**
          * @see _command_cwd
-         * 显示工作路径
          */
         'cwd' => [],
+        'exit' => [],
+
+        'remove' => ['d'],
+        'rm' => 'remove',
     ];
 
     protected $_isPersistentMode = false;
@@ -344,18 +488,13 @@ class App extends BaseApp
             }
 
             if(empty($command)) {
-                // $this->_isFirstOutput = true;
                 continue;
             }
 
             if(strtolower($command) == "exit") {
-                // $this->_isFirstOutput = true;
                 $this->output("{$this->crLGreen()}Bye!{$this->crNull()}");
                 break;
             }
-
-            // $cmd = sprintf('php "%s" %s %s', $this->_scriptPath, $command, $this->_packGlobalOptionsToStr());
-            // system($cmd);
 
             $argv = \ary\concat([$this->_scriptPath], explode(' ', $command), explode(' ', $this->_packGlobalOptionsToStr()));
             new App($argv);
@@ -370,6 +509,10 @@ class App extends BaseApp
             'script-path' => $this->_scriptPath
         ];
 
+        if(empty($args)) {
+            $this->setOption('a');
+        }
+
         if (empty($args)) {
             if ($this->existsOption('a')) {
                 if ($this->existsOption('v')) {
@@ -378,9 +521,6 @@ class App extends BaseApp
                     return $this->output(str\stringformat(array_keys($data)));
                 }
             }
-
-            $this->error("Missing the value key.");
-            return $this->info("Use 'help' command to get help.");
         } else {
             return $this->output($data[$args[0]]);
         }
@@ -394,7 +534,7 @@ class App extends BaseApp
 
         try {
             fs\mkdir(MODMGR_DIR_NAME);
-            return $this->success("Initialized successfuly");
+            return $this->successLine("Initialized successfuly");
         } catch (Exception $e) {
             $this->_processException($e);
         }
@@ -403,7 +543,7 @@ class App extends BaseApp
     protected function _command_deploy($args)
     {
         if (empty($args)) {
-            return $this->error("Missing a module name or wildcard.");
+            return $this->errorLine("Missing a module name or wildcard.");
         }
 
         $wildcard = $args[0];
@@ -414,8 +554,8 @@ class App extends BaseApp
         }
 
         if (empty($modules)) {
-            $this->error("Parameter '%s' does not match any module.", $wildcard);
-            return $this->info("You can use 'list' command to get all available modules.");
+            $this->errorLine("Parameter '%s' does not match any module.", $wildcard);
+            return $this->infoLine("You can use 'list' command to get all available modules.");
         }
 
         foreach ($modules as $module) {
@@ -427,7 +567,7 @@ class App extends BaseApp
     protected function _command_undeploy($args)
     {
         if (empty($args)) {
-            return $this->error("Missing a module name or wildcard.");
+            return $this->errorLine("Missing a module name or wildcard.");
         }
 
         $wildcard = $args[0];
@@ -438,8 +578,8 @@ class App extends BaseApp
         }
 
         if (empty($modules)) {
-            $this->error("Parameter '%s' does not match any module.", $wildcard);
-            return $this->info("You can use 'list' command to get all available modules.");
+            $this->errorLine("Parameter '%s' does not match any module.", $wildcard);
+            return $this->infoLine("You can use 'list' command to get all available modules.");
         }
 
         foreach ($modules as $module) {
@@ -473,7 +613,7 @@ class App extends BaseApp
         }
 
         if (!$this->existsOption('s')) {
-            $this->info("Total of %d module(s)", count($modules));
+            $this->infoLine("Total of %d module(s)", count($modules));
         }
     }
 
@@ -482,11 +622,11 @@ class App extends BaseApp
         $moduleName = $args[0];
 
         if(empty($moduleName)) {
-            return $this->error('Missing a module name');
+            return $this->errorLine('Missing a module name');
         }
 
         if($this->existsModule($moduleName)) {
-            return $this->error("The module '%s' already exists", $moduleName);
+            return $this->errorLine("The module '%s' already exists", $moduleName);
         }
 
         try {
@@ -503,26 +643,26 @@ class App extends BaseApp
         $path = $args[1];
 
         if(empty($moduleName)) {
-            return $this->error("Missing a module name");
+            return $this->errorLine("Missing a module name");
         }
 
         if(!$this->existsModule($moduleName)) {
-            return $this->error("Module '%s' is not exists", $moduleName);
+            return $this->errorLine("Module '%s' is not exists", $moduleName);
         }
 
         if(empty($path)) {
-            return $this->error("Missing source path");
+            return $this->errorLine("Missing source path");
         }
 
         if(!fs\exists($path)) {
-            return $this->error("Path '%s' is not exists", $path);
+            return $this->errorLine("Path '%s' is not exists", $path);
         }
 
         $subpath = fs\path\subpath($this->_projectPath, \fs\path\absolute($path));
         $mappingOption = $this->getOptionArray('--map');
 
         if(!$subpath && empty($mappingOption)) {
-            return $this->error("The file you specifiy is not in the project path, you need to use '--map' option to specity the source and target path.");
+            return $this->errorLine("The file you specifiy is not in the project path, you need to use '--map' option to specity the source and target path.");
         }
 
         $source = $mappingOption[0];
@@ -538,7 +678,7 @@ class App extends BaseApp
 
         foreach ($mappings as $mapping) {
             if(\fs\path\standard($mapping) == $target && !$this->existsOption('f')) {
-                return $this->error("This path '%s' is already in mapping list of module '%s'", $target, $moduleName);
+                return $this->errorLine("This path '%s' is already in mapping list of module '%s'", $target, $moduleName);
             }
         }
 
@@ -554,10 +694,10 @@ class App extends BaseApp
             if(fs\exists($moduleFilePath)) {
                 $mappingstr = $this->_translateMappingArrayToString($mappings);
                 io\writefile(fs\path\join($this->_modulePath, $moduleName, MODMGR_MAPPING_NAME), $mappingstr, true);
-                $this->success("%s => %s", $source, $target);
+                $this->successLine("%s => %s", $source, $target);
             }
         } catch(Exception $e) {
-            return $this->error($e->getMessage());
+            return $this->errorLine($e->getMessage());
         }
     }
 
@@ -656,27 +796,27 @@ class App extends BaseApp
         $module = $args[0];
 
         if(empty($module)) {
-            return $this->error("Missing a module name");
+            return $this->errorLine("Missing a module name");
         }
 
         if(!$this->existsModule($module)) {
-            return $this->error("Module '%s' is not exists", $module);
+            return $this->errorLine("Module '%s' is not exists", $module);
         }
 
         if(!$this->isModuleAvailable($module)) {
-            return $this->error("This module '%s' is not available", $module);
+            return $this->errorLine("This module '%s' is not available", $module);
         }
 
         $index = $args[1];
 
         if(empty($index)) {
-            return $this->error("Missing a index value");
+            return $this->errorLine("Missing a index value");
         }
 
         $index = intval($index);
 
         if($index <= 0) {
-            return $this->error('Index value must be a number that greate than 0');
+            return $this->errorLine('Index value must be a number that greate than 0');
         }
 
         $mappings = $this->_getModuleMapping($module);
@@ -693,6 +833,7 @@ class App extends BaseApp
 
         io\writefile(fs\path\join($this->_modulePath, $module, MODMGR_MAPPING_NAME),
             $this->_translateMappingArrayToString($mappings), true);
+        return true;
     }
 
     protected function _command_git($args)
@@ -702,7 +843,7 @@ class App extends BaseApp
         $args = array_values($args);
 
         if(empty($moduleWildcard)) {
-            return $this->error("Missing a module name");
+            return $this->errorLine("Missing a module name");
         }
 
         $modules = $this->_getAllModules($moduleWildcard);
@@ -760,7 +901,7 @@ class App extends BaseApp
         $repo = $args[0];
 
         if(empty($repo)) {
-            return $this->error("Missing a repository uri.");
+            return $this->errorLine("Missing a repository uri.");
         }
 
         $module = preg_replace("#\.git$#i", '', \fs\path\basename($repo));
@@ -769,7 +910,11 @@ class App extends BaseApp
             $modulePath = fs\path\join($this->_modulePath, $module);
 
             if(fs\exists($modulePath)) {
-                fs\rm($modulePath, true);
+                try {
+                    fs\rm($modulePath, true);
+                } catch(Exception $e) {
+                    return $this->_processException($e);
+                }
             }
         }
 
@@ -782,6 +927,8 @@ class App extends BaseApp
         if(!$this->existsOption('n')) {
             $this->_deployModule($module);
         }
+
+        return true;
     }
 
     protected function _command_clean($args)
@@ -792,11 +939,21 @@ class App extends BaseApp
             $path = getcwd();
         }
 
+        $path = fs\path\absolute($path);
         $self = $this;
 
+        if(!is_dir($path)) {
+            return $this->errorLine("Path '%s' is not exists or not a folder", $path);
+        }
+
         $cleanFunc = function ($path) use (&$cleanFunc, $self) {
-            $dir = dir($path);
-            $ocwd = getcwd();
+
+            try {
+                $dir = dir($path);
+            } catch(Exception $e) {
+                $self->_processException($e);
+                return ;
+            }
 
             while($file = $dir->read()) {
                 if($file == "." or $file == ".." or $file == MODMGR_DIR_NAME) {
@@ -807,17 +964,14 @@ class App extends BaseApp
 
                 if (\fs\islink($filePath)) {
                     try {
-                        $linkInfoValue = \linkinfo($filePath);
-                        chdir(dirname($filePath));
+                        $linkInfoValue = \realpath($filePath);
 
-                        if ($linkInfoValue == 0 or $linkInfoValue == -1) {
+                        if (!$linkInfoValue) {
                             \fs\rm($filePath);
-                            $self->success("Removed invalid link: '%s'", $filePath);
+                            $self->successLine("Removed invalid link: '%s'", $filePath);
                         }
 
-                        chdir($ocwd);
                     } catch (\Exception $e) {
-                        chdir($ocwd);
                         $self->_processException($e);
                     }
                 } else if (is_dir($filePath)) {
@@ -827,7 +981,7 @@ class App extends BaseApp
                         if(fs\isempty($filePath)) {
                             try {
                                 rmdir($filePath);
-                                $self->success("Removed empty directory: '%s'", $filePath);
+                                $self->successLine("Removed empty directory: '%s'", $filePath);
                             } catch (Exception $e) {
                                 $self->_processException($e);
                             }
@@ -840,6 +994,50 @@ class App extends BaseApp
         };
 
         $cleanFunc($path);
+        return true;
+    }
+
+    protected function _command_remove($args)
+    {
+        if (empty($args)) {
+            return $this->errorLine("Missing a module name or wildcard.");
+        }
+
+        $wildcard = $args[0];
+
+        if(empty($wildcard)) {
+            return $this->error("Missing a module name");
+        }
+
+        $modules = $this->_getAllModules($wildcard);
+
+        if(!$this->multiModulesConfirm(count($modules), 'removed')) {
+            return false;
+        }
+
+        if (empty($modules)) {
+            $this->errorLine("Parameter '%s' does not match any module.", $wildcard);
+            return $this->infoLine("You can use 'list' command to get all available modules.");
+        }
+
+        foreach ($modules as $module) {
+            $this->outputLine("Removing module '{$this->crLWhite()}%s{$this->crNull()}'", $module);
+
+            if($this->existsOption('d')) {
+                $this->_undeployModule($module);
+            }
+
+            $moduleFolder = fs\path\join($this->_modulePath, $module);
+
+            try {
+                fs\rm($moduleFolder, true);
+                $this->successLine("Module '%s' has beed removed", $module);
+            } catch (Exception $e) {
+                $this->_processException($e);
+            }
+        }
+
+        return true;
     }
 }
 
@@ -848,7 +1046,7 @@ class App extends BaseApp
  */
 abstract class BaseOptionSupport
 {
-    protected $_globalOptionsSupports = ['--nocolor', '--nooutput', '--persistent-mode'];
+    protected $_globalOptionsSupports = ['--nocolor', '--nooutput', '--persistent-mode', '--help'];
     protected $_options=[];
 
     /**
@@ -874,6 +1072,11 @@ abstract class BaseOptionSupport
     public function setOption($key, $value=[true])
     {
         $this->_options[$key] = $value;
+        return $this;
+    }
+
+    public function removeOption($key) {
+        unset($this->_options[$key]);
         return $this;
     }
 }
@@ -949,7 +1152,7 @@ abstract class BaseOutputInput extends BaseOptionSupport
         return false;
     }
 
-    public function output($str)
+    public function output($str='')
     {
         if($this->existsOption('--nooutput')) {
             return null;
@@ -960,8 +1163,11 @@ abstract class BaseOutputInput extends BaseOptionSupport
 
         if($this->existsOption('--nocolor')) {
             $content = preg_replace("#\033\[([01];)?([0-9]{1,2};)?[0-9]{1,2}m#", '', $content);
-            $args[0] = $content;
+        } else {
+            $args[0] = (string)$content;
         }
+
+        $args[0] = $content;
         echo call_user_func_array('sprintf', $args);
         return null;
     }
@@ -973,11 +1179,39 @@ abstract class BaseOutputInput extends BaseOptionSupport
         return null;
     }
 
+    public function errorLine()
+    {
+        call_user_func_array([$this, 'error'], func_get_args());
+        $this->outputLine();
+        return false;
+    }
+
+    public function warningLine()
+    {
+        call_user_func_array([$this, 'warning'], func_get_args());
+        $this->outputLine();
+        return false;
+    }
+
+    public function infoLine()
+    {
+        call_user_func_array([$this, 'info'], func_get_args());
+        $this->outputLine();
+        return false;
+    }
+
+    public function successLine()
+    {
+        call_user_func_array([$this, 'success'], func_get_args());
+        $this->outputLine();
+        return null;
+    }
+
     public function error()
     {
         $args = func_get_args();
         $args[0] = "{$this->crWhite()}[{$this->crLRed()}error{$this->crWhite()}]{$this->crNull()} " . $args[0];
-        call_user_func_array([$this, 'outputLine'], $args);
+        call_user_func_array([$this, 'output'], $args);
         return false;
     }
 
@@ -985,7 +1219,7 @@ abstract class BaseOutputInput extends BaseOptionSupport
     {
         $args = func_get_args();
         $args[0] = "{$this->crWhite()}[{$this->crLYellow()}warning{$this->crWhite()}]{$this->crNull()} " . $args[0];
-        call_user_func_array([$this, 'outputLine'], $args);
+        call_user_func_array([$this, 'output'], $args);
         return false;
     }
 
@@ -993,7 +1227,7 @@ abstract class BaseOutputInput extends BaseOptionSupport
     {
         $args = func_get_args();
         $args[0] = "{$this->crGray()}{$args[0]}{$this->crNull()}";
-        call_user_func_array([$this, 'outputLine'], $args);
+        call_user_func_array([$this, 'output'], $args);
         return false;
     }
 
@@ -1001,8 +1235,16 @@ abstract class BaseOutputInput extends BaseOptionSupport
     {
         $args = func_get_args();
         $args[0] = "{$this->crWhite()}[{$this->crGreen()}ok{$this->crWhite()}]{$this->crNull()} {$args[0]}";
-        call_user_func_array([$this, 'outputLine'], $args);
+        call_user_func_array([$this, 'output'], $args);
         return null;
+    }
+
+    public function disableOutput() {
+        $this->setOption('--nooutput');
+    }
+
+    public function enableOutput() {
+        $this->removeOption('--nooutput');
     }
 
     public function __call($functionName, $t)
@@ -1046,11 +1288,21 @@ abstract class BaseApp extends BaseOutputInput
             return false;
         }
 
+        if($this->existsOption('--help')) {
+            if($this->_targetCommand != 'help') {
+                $this->_commandArguments = [$this->_targetCommand];
+                $this->_targetCommand = 'help';
+                $this->_command = "help";
+                $this->_commandEscape = "help";
+            }
+        }
+
         if(!$this->_checkInit()) {
             return false;
         }
 
         $this->_dispatch();
+        return true;
     }
 
     protected function _init($argv)
@@ -1067,12 +1319,17 @@ abstract class BaseApp extends BaseOutputInput
             $this->_command = $this->_targetCommand;
         }
 
-        $this->_commandEscape = str_replace('-', '_', $this->_targetCommand);
+        $this->_commandEscape = $this->_escapeCommand($this->_targetCommand);
         unset($argv[1]);
 
         $this->_findModulePath();
 
         return $argv;
+    }
+
+    protected function _escapeCommand($command)
+    {
+        return str_replace('-', '_', $this->_targetCommand);
     }
 
     protected function _packGlobalOptionsToStr()
@@ -1097,9 +1354,9 @@ abstract class BaseApp extends BaseOutputInput
     {
         if(empty($this->_modulePath)) {
             if(!in_array($this->_targetCommand, $this->_noNeedToInit)) {
-                $this->error("The current directory has not been initialized yet.");
+                $this->errorLine("The current directory has not been initialized yet.");
                 $this->outputLine("Directory '%s'", getcwd());
-                $this->info("You can use 'init' command to initialize");
+                $this->infoLine("You can use 'init' command to initialize");
                 return false;
             }
         }
@@ -1215,7 +1472,7 @@ abstract class BaseApp extends BaseOutputInput
     protected function _undeployModule($module)
     {
         if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
-            return $this->error("Module '%s' is not exists.", $module);
+            return $this->errorLine("Module '%s' is not exists.", $module);
         }
 
         $mappings = $this->_getModuleMapping($module);
@@ -1238,11 +1495,11 @@ abstract class BaseApp extends BaseOutputInput
                 } else {
                     if (fs\exists($targetFullPath)) {
                         if(!fs\islink($targetFullPath) && !$this->existsOption('f')) {
-                            $this->warning("There is an exist file or folder '%s'", $targetFullPath);
-                            $this->info("You can use '-f' option to forece remove exists file or folder.");
+                            $this->warningLine("There is an exist file or folder '%s'", $targetFullPath);
+                            $this->infoLine("You can use '-f' option to forece remove exists file or folder.");
                         } else {
                             fs\rm($targetFullPath, true);
-                            $this->success("Removed '%s'", $targetFullPath);
+                            $this->successLine("Removed '%s'", $targetFullPath);
                         }
 
                         $itemCount++;
@@ -1262,22 +1519,22 @@ abstract class BaseApp extends BaseOutputInput
     protected function _processException(Exception $e, $subfixMsg='')
     {
         if($e->getCode() == 2) {
-            $this->error($e->getMessage() . $subfixMsg);
+            $this->errorLine($e->getMessage() . $subfixMsg);
         } else if($e->getCode() == 1){
-            $this->warning($e->getMessage() . $subfixMsg);
+            $this->warningLine($e->getMessage() . $subfixMsg);
         }
     }
 
     protected function _deployModule($module)
     {
         if(!fs\isdir(fs\path\join($this->_modulePath, $module))) {
-            return $this->error("Module '%s' is not exists.", $module);
+            return $this->errorLine("Module '%s' is not exists.", $module);
         }
 
         $mappings = $this->_getModuleMapping($module);
 
         if(empty($mappings)) {
-            return $this->error("Module '%s' is not available", $module);
+            return $this->errorLine("Module '%s' is not available", $module);
         }
 
         $newItemCount = 0;
@@ -1294,7 +1551,7 @@ abstract class BaseApp extends BaseOutputInput
                             fs\copy($moduleFullPath, $targetFullPath);
                             $this->outputLine("Copy '%s' to '%s'", $moduleFullPath, $targetFullPath);
                         } else {
-                            $this->error("Can't copy file or directory to '%s', the path is already exists", $targetFullPath);
+                            $this->errorLine("Can't copy file or directory to '%s', the path is already exists", $targetFullPath);
                         }
                     } else {
                         $newItemCount ++;
@@ -1329,11 +1586,11 @@ abstract class BaseApp extends BaseOutputInput
                             $result = fs\rm($targetFullPath,true);
 
                             if(true !== $result) {
-                                $this->error("Can't remove link '%s'. %s", $targetFullPath, $result);
+                                $this->errorLine("Can't remove link '%s'. %s", $targetFullPath, $result);
                                 continue;
                             }
                         } else {
-                            $this->error("Can't create link '%s', the path is already exists", $targetFullPath);
+                            $this->errorLine("Can't create link '%s', the path is already exists", $targetFullPath);
                             continue;
                         }
                     }
@@ -1349,16 +1606,16 @@ abstract class BaseApp extends BaseOutputInput
                     chdir(dirname($targetFullPath));
 
                     if(!fs\exists($linkval)) {
-                        $this->error("Link to a not exists file or folder: '%s'", $linkval);
+                        $this->errorLine("Link to a not exists file or folder: '%s'", $linkval);
                         continue;
                     }
 
                     $result = fs\symlink($targetFullPath, $linkval);
 
                     if($result===true) {
-                        $this->success("%s => %s", $linkval, $relativeTargetPath);
+                        $this->successLine("%s => %s", $linkval, $relativeTargetPath);
                     } else {
-                        $this->error($result);
+                        $this->errorLine($result);
                     }
 
                     chdir($oldcwd);
@@ -1431,7 +1688,7 @@ abstract class BaseApp extends BaseOutputInput
             } else if($arg[0] == '-') {
                 foreach (str_split(substr($arg, 1), 1) as $key) {
                     if($this->existsOption($key)) {
-                        return $this->error("Duplicate option: '%s'", $key);
+                        return $this->errorLine("Duplicate option: '%s'", $key);
                     }
 
                     $this->_options[$key] = true;
@@ -1462,14 +1719,14 @@ abstract class BaseApp extends BaseOutputInput
     protected function _checkArguments()
     {
         if($this->_isCommandNotFound()) {
-            return $this->error("Command '%s' not found", $this->_command);
+            return $this->errorLine("Command '%s' not found", $this->_command);
         }
 
         $supportOptions = $this->_getCommandSupportOptions();
 
         foreach ($this->_options as $key => $option) {
             if(!in_array($key, $supportOptions) && !in_array($key, $this->_globalOptionsSupports)) {
-                return $this->error("Option '%s' is not supported in command '%s'", $key, $this->_command);
+                return $this->errorLine("Option '%s' is not supported in command '%s'", $key, $this->_command);
             }
         }
 

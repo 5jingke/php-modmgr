@@ -60,6 +60,7 @@ namespace fs {
     }
 
     function rmfile($path) {
+        chmod($path, 0777);
         return \unlink($path);
     }
 
@@ -69,7 +70,7 @@ namespace fs {
         }
 
         foreach (array_diff(scandir($path), array('.','..')) as $file) {
-            is_dir("$path/$file") ? rmdir("$path/$file") : unlink("$path/$file");
+            is_dir("$path/$file") ? rmdir("$path/$file", $rmtree) : rmfile("$path/$file");
         }
 
         return \rmdir($path);
@@ -97,7 +98,7 @@ namespace fs {
         } else if(isfile($path)) {
             return rmfile($path);
         } else if(isdir($path)) {
-            return rmdir($path, $rmtree);
+            return \fs\rmdir($path, $rmtree);
         } else {
             return false;
         }
