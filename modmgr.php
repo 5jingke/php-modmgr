@@ -1,8 +1,30 @@
 <?php
 /**
  * Module Manager PHP Edition
- * @autor JinkoWu
+ * @autor Jinko Wu
  * @email jk@5jk.me
+ * 
+ * @see App
+ * @see App::_command_help
+ * @see App::_command_cwd
+ * @see App::_command_version
+ * @see App::_command_persistent
+ * @see App::_command_show
+ * @see App::_command_initialize
+ * @see App::_command_deploy
+ * @see App::_command_undeploy
+ * @see App::_command_list
+ * @see App::_command_create
+ * @see App::_command_mapadd
+ * @see App::_command_map
+ * @see App::_command_mapdel
+ * @see App::_command_git
+ * @see App::_command_elevate_privileges
+ * @see App::_command_clone
+ * @see App::_command_clean
+ * @see App::_command_remove
+ * @see App::_command_disable
+ * @see App::_command_enable
  * -------------------------------------------------------------------------
  * @modmgr-help
  * Module Manager PHP Edition
@@ -10,7 +32,7 @@
  * Usage: modmgr [command] [commandArguments] [options] [-- [commandArguments]]
  *
  * command:
- *     MODMGR support commands bellow:
+ *     MODMGR supported commands bellow:
  *
  * {$commands}
  *
@@ -22,9 +44,10 @@
  *     Short option only use single letter and it can be made up of one or more '-', such as '-abcd' Equivalent to '-a' '-b' '-c' '-d'.
  *     Short option only use as a bool value.
  *
- *     There are global option bellow:
- *     --nocolor: Any out without color
- *     --nooutput: Don't output any message
+ *     Global options bellow:
+ * 
+ *     --nocolor: Outputs text without color
+ *     --nooutput: Don't output anything
  *     --help: Show help documentation of a command
  *
  * Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
@@ -293,7 +316,6 @@
  *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
  *      This argument can't be empty. You can use '*' to filter out all modules
  *
- *
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
@@ -462,7 +484,17 @@ class App extends BaseApp
         $detail = $docs[$command]['detail'];
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
-        return $this->outputLine($detail . "\n");
+        $this->outputLine($detail . "\n");
+        
+        if($command == '-') {
+            $this->output(
+                " %s, %s", 
+                "{$this->crGray()}Power by {$this->crGreen()}Jinko Wu{$this->crGray()}. If you have any suggestions or comments",
+                "please send it to me by email {$this->crGreen()}jk@5jk.me{$this->crNull()}\n"
+            );
+        }
+        
+        return true;
     }
 
     protected function _command_cwd()
