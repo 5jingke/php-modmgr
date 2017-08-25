@@ -3,7 +3,7 @@
  * Module Manager PHP Edition
  * @autor Jinko Wu
  * @email jk@5jk.me
- * 
+ *
  * @see App
  * @see App::_command_help
  * @see App::_command_cwd
@@ -45,7 +45,7 @@
  *     Short option only use as a bool value.
  *
  *     Global options bellow:
- * 
+ *
  *     --nocolor: Outputs text without color
  *     --nooutput: Don't output anything
  *     --help: Show help documentation of a command
@@ -64,8 +64,8 @@
  * @modmgr-help-list
  * @d List the modules that matching wildcard
  *
- * Usage: modmgr list [wildcard] [-as]
- *        modmgr l [wildcard] [-as]
+ * Usage: modmgr list [wildcard] [-asl]
+ *        modmgr l [wildcard] [-asl]
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
@@ -77,6 +77,7 @@
  *     -a: List all modules.
  *         If this option is not specified, only available modules will be listed
  *     -s: Simple mode.
+ *     -l: One item per line
  *
  *
  * @modmgr-help-deploy
@@ -355,7 +356,7 @@ class App extends BaseApp
         /**
          * @see _command_list
          */
-        'list' => ['a', 's'],
+        'list' => ['a', 's', 'l'],
         'l' => 'list',
 
         /**
@@ -461,7 +462,7 @@ class App extends BaseApp
         if(empty($command)) {
             $commandList = array_filter(array_keys($this->_commondList));
             $maxLength = ary\maxlength($commandList);
-            
+
             foreach($commandList as $i => $_command) {
                 $_command = sprintf("{$this->crLSkyblue()}%-{$maxLength}s  {$this->crGray()}%s{$this->crNull()}",
                     $_command, $docs[$this->_getTargetCommand($_command)]['simple']
@@ -488,15 +489,15 @@ class App extends BaseApp
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
         $this->outputLine($detail . io\endline());
-        
+
         if($command == '-') {
             $this->output(
-                " %s, %s", 
+                " %s, %s",
                 "{$this->crGray()}Power by {$this->crGreen()}Jinko Wu{$this->crGray()}. If you have any suggestions or comments",
                 "please send it to me by email {$this->crGreen()}jk@5jk.me{$this->crNull()}".io\endline()
             );
         }
-        
+
         return true;
     }
 
@@ -681,19 +682,40 @@ class App extends BaseApp
             $modules = $this->_getAvailableModules($wildcard);
         }
 
+        $mcount = count($modules);
+
         if(!empty($modules)) {
-            foreach ($modules as $m) {
-                if($this->isModuleAvailable($m)) {
-                    $this->outputLine("%s", $m);
-                } else {
-                    $this->outputLine("{$this->crLYellow()}%s{$this->crNull()}%s",
-                        $m, (!$this->existsOption('s') and $this->isModuleDisabled($m)) ? " {$this->crGray()}(disabled){$this->crNull()}": "");
+            if($this->existsOption('l')) {
+                foreach ($modules as $m) {
+                    if($this->isModuleAvailable($m)) {
+                        $this->outputLine("%s", $m);
+                    } else {
+                        $this->outputLine("{$this->crLYellow()}%s{$this->crNull()}%s",
+                            $m, (!$this->existsOption('s') and $this->isModuleDisabled($m)) ? " {$this->crGray()}(disabled){$this->crNull()}": "");
+                    }
+                }
+            } else {
+                $moduleDetail = ary\screenoutputformat($modules, console\cols());
+                $lengths = $moduleDetail['lengths'];
+                $format = implode("  ", array_map(function($row) {
+                    return "%-{$row}s";
+                }, $lengths));
+
+                foreach ($moduleDetail['data'] as $row) {
+                    foreach ($row as $i => $val) {
+                        if(!$this->isModuleAvailable($val)) {
+                            $row[$i] = "{$this->crLYellow()}$val{$this->crNull()}";
+                        }
+                    }
+
+                    $this->outputLine(vsprintf($format, $row));
                 }
             }
+
         }
 
         if (!$this->existsOption('s')) {
-            $this->infoLine("Total of %d module(s)", count($modules));
+            $this->infoLine("Total of %d module(s)", $mcount);
         }
     }
 
@@ -1309,7 +1331,7 @@ abstract class BaseOutputInput extends BaseOptionSupport
         $content = $args[0];
         $args[0] = (string)$content;
         $content = call_user_func_array('sprintf', $args);
-        
+
         if($this->existsOption('--nocolor')) {
             $content = preg_replace("#\033\[([01];)?([0-9]{1,2};)?[0-9]{1,2}m#", '', $content);
         }

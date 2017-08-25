@@ -345,19 +345,19 @@ namespace ary {
             }
         }
     }
-    
+
     function maxlength($array)
     {
         $max = 0;
-        
+
         foreach($array as $ary) {
             $len = strlen((string)$ary);
-            
+
             if($max <= $len) {
                 $max = $len;
-            }    
+            }
         }
-        
+
         return $max;
     }
 
@@ -375,9 +375,102 @@ namespace ary {
 
         return $result;
     }
+
+    function screenoutputformat($ary, $outputCols) {
+        $_get_suitable_colcount = function ($ary, $outputCols) {
+            $len = 0;
+            $i = 0;
+
+            foreach($ary as $val) {
+                $vlen = strlen($val);
+
+                if($len + $vlen > $outputCols - 2*($i-1)) {
+                    break;
+                }
+
+                $i ++;
+            }
+
+            return $i < 1 ? 1 : $i;
+        };
+
+        $_calc_cols_maxlengths = function ($ary) {
+            $maxlength = [];
+
+            foreach($ary as $val) {
+                $maxlength []= maxlength($val);
+            }
+
+            return $maxlength;
+        };
+
+        $colcount = $_get_suitable_colcount($ary, $outputCols-1);
+
+        $maxlengths = [''];
+
+        while($colcount>1) {
+            $tmp = towishcolformat($ary, $colcount);
+            $maxlengths = $_calc_cols_maxlengths($tmp);
+
+            if(array_sum($maxlengths) > $outputCols-1 - 2*($colcount-1)) {
+                $colcount --;
+            } else {
+                break;
+            }
+        }
+
+        return ['lengths' => $maxlengths, 'data' => coltorowformat($ary, $colcount, true)];
+    }
+
+    function coltorowformat($ary, $colcount, $fillMissing = false) {
+        $i = 0;
+        $resultAry = [];
+        $count = 0;
+
+        foreach ($ary as $val) {
+            $count ++ ;
+            $resultAry [$i] []= $val;
+
+            if($count >= $colcount) {
+                $i ++;
+                $count = 0;
+            }
+        }
+
+        if($fillMissing) {
+            while($count<$colcount) {
+                $resultAry [$i] []= '';
+                $count ++;
+            }
+        }
+
+        return $resultAry;
+    }
+
+    function towishcolformat($ary, $colcount, $fillMissing = false) {
+        $resultAry = [];
+        $i = 0;
+
+        foreach($ary as $val) {
+            $resultAry [$i % $colcount] []= $val;
+            $i ++;
+        }
+
+        if($fillMissing) {
+            while($i % $colcount != 0) {
+                $resultAry [$i % $colcount] []= '';
+                $i ++;
+            }
+        }
+
+        return $resultAry;
+    }
 }
 
 namespace str {
+
+    use function ary\maxlength;
+
     function matchwildcard($subject, $wildcard, $ignorecase=false) {
         return preg_match(wildcardtoregular($wildcard, $ignorecase), $subject);
     }
@@ -425,6 +518,27 @@ namespace str {
             return implode("\n", $strAry);
         } else {
             return implode("\n", $ary);
+        }
+    }
+}
+
+namespace console {
+    function cols($default=80) {
+        exec('mode con 2>&1', $output, $result);
+
+        if($result == 0) {
+            $content = iconv('GB2312', 'UTF-8', implode("\n",  $output));
+            preg_match("#^.*?:\s*\-+\s*.*\s*.*?:.*?([0-9]+)#",trim($content), $matchs);
+
+            $cols = intval($matchs[1]);
+
+            if(!$cols) {
+                return $default;
+            }
+
+            return $cols;
+        } else {
+            return $default;
         }
     }
 }
