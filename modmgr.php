@@ -704,18 +704,18 @@ class App extends BaseApp
             } else {
                 $moduleDetail = ary\screenoutputformat($modules, console\cols());
                 $lengths = $moduleDetail['lengths'];
-                $format = implode("  ", array_map(function($row) {
-                    return "%-{$row}s";
-                }, $lengths));
 
                 foreach ($moduleDetail['data'] as $row) {
+                    $formats = [];
                     foreach ($row as $i => $val) {
                         if(!$this->isModuleAvailable($val)) {
-                            $row[$i] = "{$this->crLYellow()}$val{$this->crNull()}";
+                            $formats []= "{$this->crLYellow()}%-{$lengths[$i]}s{$this->crNull()}";
+                        } else {
+                            $formats []= "%-{$lengths[$i]}s";
                         }
                     }
 
-                    $this->outputLine(vsprintf($format, $row));
+                    $this->outputLine(vsprintf(implode('  ', $formats), $row));
                 }
             }
 
@@ -1008,36 +1008,41 @@ class App extends BaseApp
 
     protected function _command_clone($args)
     {
-        $repo = $args[0];
-
-        if(empty($repo)) {
+        if(empty($args)) {
             return $this->errorLine("Missing a repository uri.");
         }
 
-        $module = preg_replace("#\.git$#i", '', \fs\path\basename($repo));
+        $ocwd = getcwd();
+        chdir($this->_modulePath);
+        $this->outputLine("{$this->crGray()}Total of %d item(s){$this->crNull()}", count($args));
+        $index = 1;
 
-        if($this->existsOption('f')) {
-            $modulePath = fs\path\join($this->_modulePath, $module);
+        foreach ($args as $repo) {
+            $this->outputLine("%d > Clone '{$this->crLSkyblue()}%s{$this->crNull()}'", $index++, $repo);
+            $module = preg_replace("#\.git$#i", '', \fs\path\basename($repo));
 
-            if(fs\exists($modulePath)) {
-                try {
-                    fs\rm($modulePath, true);
-                } catch(Exception $e) {
-                    return $this->_processException($e);
+            if($this->existsOption('f')) {
+                $modulePath = fs\path\join($this->_modulePath, $module);
+
+                if(fs\exists($modulePath)) {
+                    try {
+                        fs\rm($modulePath, true);
+                    } catch(Exception $e) {
+                        $this->_processException($e);
+                        continue;
+                    }
                 }
+            }
+
+            $cmd = sprintf('git clone %s', $repo);
+            system($cmd);
+
+            if(!$this->existsOption('n')) {
+                $this->_deployModule($module);
             }
         }
 
-        $cmd = sprintf('git clone %s', $repo);
-        $ocwd = getcwd();
-        chdir($this->_modulePath);
-        system($cmd);
         chdir($ocwd);
-
-        if(!$this->existsOption('n')) {
-            $this->_deployModule($module);
-        }
-
         return true;
     }
 
@@ -1464,21 +1469,6 @@ abstract class BaseApp extends BaseOutputInput
         }
 
         if($dispatch) {
-            if(!$this->_checkArguments()) {
-                return false;
-            }
-
-            if($this->existsOption('--help')) {
-                if($this->_targetCommand != 'help') {
-                    $this->_commandArguments = [$this->_targetCommand];
-                    $this->_setCommand('help');
-                }
-            }
-
-            if(!$this->_checkInit()) {
-                return false;
-            }
-
             $this->dispatch();
         }
 
@@ -1535,7 +1525,7 @@ abstract class BaseApp extends BaseOutputInput
             if(!in_array($this->_targetCommand, $this->_noNeedToInit)) {
                 $this->errorLine("The current directory has not been initialized yet.");
                 $this->outputLine("Directory '%s'", getcwd());
-                $this->infoLine("You can use 'init' command to initialize");
+                $this->infoLine("You can use 'initialize' command to initialize");
                 return false;
             }
         }
@@ -2022,6 +2012,21 @@ abstract class BaseApp extends BaseOutputInput
 
     public function dispatch()
     {
+        if(!$this->_checkArguments()) {
+            return false;
+        }
+
+        if($this->existsOption('--help')) {
+            if($this->_targetCommand != 'help') {
+                $this->_commandArguments = [$this->_targetCommand];
+                $this->_setCommand('help');
+            }
+        }
+
+        if(!$this->_checkInit()) {
+            return false;
+        }
+
         $this->{$this->_getDispatchMethodName()}($this->_commandArguments);
     }
 
