@@ -600,9 +600,9 @@ class App extends BaseApp
         if (empty($args)) {
             if ($this->existsOption('a')) {
                 if ($this->existsOption('v')) {
-                    return $this->output(str\stringformat($data, true));
+                    return $this->outputLine(str\stringformat($data, true));
                 } else {
-                    return $this->output(str\stringformat(array_keys($data)));
+                    return $this->outputLine(str\stringformat(array_keys($data)));
                 }
             }
         } else {
