@@ -38,6 +38,7 @@
  *
  * commandArguments:
  *     Any charater after '--' will be processed as argumens
+ *     e.g. `modmgr git westernunion -- remote -v`
  *
  * options:
  *     Long option can receive one or more values, such as --file path.
@@ -577,8 +578,17 @@ class App extends BaseApp
                 break;
             }
 
-            $argv = \ary\concat([$this->_scriptPath], explode(' ', $command), explode(' ', $this->_packGlobalOptionsToStr()));
-            new App($argv);
+            $argv = \ary\concat([$this->_scriptPath], $this->_parseCommandStr($command));
+            $app = new App($argv, false);
+
+            foreach ($this->_globalOptionsSupports as $key => $value) {
+                if($this->existsOption($key)) {
+                    $app->setOption($key, $this->getOptionArray($key));
+                }
+            }
+
+            $app->dispatch();
+            unset($app);
         }
     }
 
@@ -1441,7 +1451,7 @@ abstract class BaseApp extends BaseOutputInput
     protected $_modulePath;
     protected $_projectPath;
 
-    public function __construct($argv)
+    public function __construct($argv, $dispatch=true)
     {
         $argv = $this->_init($argv);
 
@@ -1453,22 +1463,25 @@ abstract class BaseApp extends BaseOutputInput
             $this->_setCommand('help');
         }
 
-        if(!$this->_checkArguments()) {
-            return false;
-        }
-
-        if($this->existsOption('--help')) {
-            if($this->_targetCommand != 'help') {
-                $this->_commandArguments = [$this->_targetCommand];
-                $this->_setCommand('help');
+        if($dispatch) {
+            if(!$this->_checkArguments()) {
+                return false;
             }
+
+            if($this->existsOption('--help')) {
+                if($this->_targetCommand != 'help') {
+                    $this->_commandArguments = [$this->_targetCommand];
+                    $this->_setCommand('help');
+                }
+            }
+
+            if(!$this->_checkInit()) {
+                return false;
+            }
+
+            $this->dispatch();
         }
 
-        if(!$this->_checkInit()) {
-            return false;
-        }
-
-        $this->_dispatch();
         return true;
     }
 
@@ -1476,14 +1489,8 @@ abstract class BaseApp extends BaseOutputInput
     {
         $this->_initErrorHandle();
         $this->_scriptPath = fs\path\standard($argv[0]);
-
         unset($argv[0]);
-
-        // $this->_setCommand($argv[0]);
-        // unset($argv[1]);
-
         $this->_findModulePath();
-
         return $argv;
     }
 
@@ -2004,7 +2011,16 @@ abstract class BaseApp extends BaseOutputInput
         return $val;
     }
 
-    protected function _dispatch()
+    protected function _parseCommandStr($str)
+    {
+        $str = preg_replace_callback('#"(.*?)"#', function($args) {
+            return '"'. str_replace(' ', urlencode(' '), $args[1]) .'"';
+        }, $str);
+
+        return array_map(function($row) {return trim(str_replace(urlencode(' '), ' ', $row), '"');}, explode(" ", $str));
+    }
+
+    public function dispatch()
     {
         $this->{$this->_getDispatchMethodName()}($this->_commandArguments);
     }
