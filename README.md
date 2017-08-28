@@ -51,4 +51,5 @@
      --nooutput: Don't output anything
      --help: Show help documentation of a command
 
- Use `modmgr help [command]` or `modmgr [command] --help` to get the more details```
+ Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
+```
