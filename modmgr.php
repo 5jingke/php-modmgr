@@ -70,8 +70,8 @@
  * @modmgr-help-list
  * @d List the modules that matching wildcard
  *
- * Usage: modmgr list [wildcard] [-asl]
- *        modmgr l [wildcard] [-asl]
+ * Usage: modmgr list [wildcard] [-aslo]
+ *        modmgr l [wildcard] [-aslo]
  *
  * wildcard:
  *     This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character
@@ -84,6 +84,7 @@
  *         If this option is not specified, only available modules will be listed
  *     -s: Simple mode.
  *     -l: One item per line
+ *     -o: Take the results that do not match wildcard
  *
  *
  * @modmgr-help-deploy
@@ -362,7 +363,7 @@ class App extends BaseApp
         /**
          * @see _command_list
          */
-        'list' => ['a', 's', 'l'],
+        'list' => ['a', 's', 'l', 'o'],
         'l' => 'list',
 
         /**
@@ -682,11 +683,12 @@ class App extends BaseApp
     protected function _command_list($args)
     {
         $wildcard = $args[0];
+        $opposite = $this->existsOption('o');
 
         if ($this->existsOption('a')) {
-            $modules = $this->_getAllModules($wildcard);
+            $modules = $this->_getAllModules($wildcard, $opposite);
         } else {
-            $modules = $this->_getAvailableModules($wildcard);
+            $modules = $this->_getAvailableModules($wildcard, $opposite);
         }
 
         $mcount = count($modules);
@@ -1552,11 +1554,11 @@ abstract class BaseApp extends BaseOutputInput
         return true;
     }
 
-    protected function _getAvailableModules($wildcard)
+    protected function _getAvailableModules($wildcard, $opposite=false)
     {
         $result = [];
 
-        foreach($this->_getAllModules($wildcard) as $module) {
+        foreach($this->_getAllModules($wildcard, $opposite) as $module) {
             if($this->isModuleAvailable($module)) {
                 $result []= $module;
             }
@@ -1615,11 +1617,15 @@ abstract class BaseApp extends BaseOutputInput
         return true;
     }
 
-    protected function _getAllModules($wildcard) {
+    protected function _getAllModules($wildcard, $opposite=false) {
         $result = [];
 
         foreach(fs\subdirs(fs\path\join($this->_modulePath)) as $module) {
             if(empty($wildcard) || str\matchwildcard($module, $wildcard)) {
+                if(!$opposite) {
+                    $result []= $module;
+                }
+            } else if($opposite) {
                 $result []= $module;
             }
         }
