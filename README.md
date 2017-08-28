@@ -43,7 +43,8 @@ Module Manager PHP Edition
 
  options:
      Long option can receive one or more values, such as --file path.
-     Short option only use single letter and it can be made up of one or more '-', such as '-abcd' equivalent to '-a' '-b' '-c' '-d'.
+     Short option only use single letter and it can be made up of one or more '-', 
+               such as '-abcd' equivalent to '-a' '-b' '-c' '-d'.
      Short option only use as a bool value.
 
      Global options bellow:
