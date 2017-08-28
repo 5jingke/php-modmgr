@@ -41,7 +41,7 @@
  *
  * options:
  *     Long option can receive one or more values, such as --file path.
- *     Short option only use single letter and it can be made up of one or more '-', such as '-abcd' Equivalent to '-a' '-b' '-c' '-d'.
+ *     Short option only use single letter and it can be made up of one or more '-', such as '-abcd' equivalent to '-a' '-b' '-c' '-d'.
  *     Short option only use as a bool value.
  *
  *     Global options bellow:
@@ -51,6 +51,11 @@
  *     --help: Show help documentation of a command
  *
  * Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
+ *
+ * {$crGRAY}MODMGR git repository address: https://gitee.com/jinko/php-modmgr
+ * git clone https://gitee.com/jinko/php-modmgr.git
+ * git clone ssh://git@gitee.com:jinko/php-modmgr.git
+ * {$crGRAY}Power by {$crGREEN}Jinko Wu{$crGRAY}. If you have any suggestions or comments, please send it to me by email {$crGREEN}jk@5jk.me{$crNULL}
  *
  *
  * @modmgr-help-help
@@ -489,14 +494,6 @@ class App extends BaseApp
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
         $this->outputLine($detail . io\endline());
-
-        if($command == '-') {
-            $this->output(
-                " %s, %s",
-                "{$this->crGray()}Power by {$this->crGreen()}Jinko Wu{$this->crGray()}. If you have any suggestions or comments",
-                "please send it to me by email {$this->crGreen()}jk@5jk.me{$this->crNull()}".io\endline()
-            );
-        }
 
         return true;
     }
