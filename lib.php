@@ -37,12 +37,6 @@ namespace fs {
         return true;
     }
 
-    function rmempty($path) {
-        if(isempty($path)) {
-
-        }
-    }
-
     function subdirs($dir) {
         $result = [];
 
@@ -524,19 +518,23 @@ namespace str {
 
 namespace console {
     function cols($default=80) {
-        exec('mode con 2>&1', $output, $result);
+        if(PHP_OS == "WINNT") {
+            exec('mode con 2>&1', $output, $result);
 
-        if($result == 0) {
-            $content = iconv('GB2312', 'UTF-8', implode("\n",  $output));
-            preg_match("#^.*?:\s*\-+\s*.*\s*.*?:.*?([0-9]+)#",trim($content), $matchs);
+            if($result == 0) {
+                $content = iconv('GB2312', 'UTF-8', implode("\n",  $output));
+                preg_match("#^.*?:\s*\-+\s*.*\s*.*?:.*?([0-9]+)#",trim($content), $matchs);
 
-            $cols = intval($matchs[1]);
+                $cols = intval($matchs[1]);
 
-            if(!$cols) {
+                if(!$cols) {
+                    return $default;
+                }
+
+                return $cols;
+            } else {
                 return $default;
             }
-
-            return $cols;
         } else {
             return $default;
         }
