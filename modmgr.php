@@ -56,7 +56,9 @@
  * {$crGRAY}MODMGR git repository address: https://gitee.com/jinko/php-modmgr
  * git clone https://gitee.com/jinko/php-modmgr.git
  * git clone ssh://git@gitee.com:jinko/php-modmgr.git
- * {$crGRAY}Power by {$crGREEN}Jinko Wu{$crGRAY}. If you have any suggestions or comments, please send it to me by email {$crGREEN}jk@5jk.me{$crNULL}
+ *
+ * {$crGRAY}Power by {$crGREEN}Jinko Wu{$crGRAY}. Email {$crGREEN}jk@5jk.me{$crGRAY}.
+ * If you have any suggestions or comments, I am looking forward to your letter.{$crNULL}
  *
  *
  * @modmgr-help-help
