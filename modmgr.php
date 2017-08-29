@@ -584,7 +584,7 @@ class App extends BaseApp
             $argv = \ary\concat([$this->_scriptPath], $this->_parseCommandStr($command));
             $app = new App($argv, false);
 
-            foreach ($this->_globalOptionsSupports as $key => $value) {
+            foreach ($this->_globalOptionsSupports as $key) {
                 if($this->existsOption($key)) {
                     $app->setOption($key, $this->getOptionArray($key));
                 }
