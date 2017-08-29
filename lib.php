@@ -54,7 +54,6 @@ namespace fs {
     }
 
     function rmfile($path) {
-        chmod($path, 0777);
         return \unlink($path);
     }
 
@@ -76,14 +75,16 @@ namespace fs {
                 try{
                     return rmfile($path);
                 } catch (\Exception $e) {
+                    echo $e->getMessage();
                     $output = [];
                     $result = 2;
-                    exec(sprintf('rmdir "%s" 2>&1', $path), $output, $result);
+                    $cmd = sprintf('rmdir "%s" 2>&1', $path);
+                    exec($cmd, $output, $result);
 
                     if($result == 0) {
                         return true;
                     } else {
-                        throw new \Exception(iconv('GB2312', 'UTF-8', $output[0]));
+                        throw new \Exception(iconv('GB2312', 'UTF-8', $output[0]) . " ($cmd)", 2);
                     }
                 }
             } else {

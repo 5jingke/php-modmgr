@@ -127,13 +127,14 @@
  * @modmgr-help-clean
  * @d Clean broken symbocli links and empty directory tree
  *
- * Usage: modmgr clean [path] [-d]
+ * Usage: modmgr clean [path] [-dc]
  *
  * path:
  *     Specify a path to do cleaning
  *
  * option:
  *     -d: Remove empty tree at the same time
+ *     -c: Only check and show what will be deleted
  *
  *
  * @modmgr-help-git
@@ -384,7 +385,7 @@ class App extends BaseApp
         /**
          * @see _command_clean
          */
-        'clean' => ['d'],
+        'clean' => ['d', 'c'],
 
         /**
          * @see _command_git
@@ -643,8 +644,9 @@ class App extends BaseApp
 
         $wildcard = $args[0];
         $modules = $this->_getAvailableModules($wildcard);
+        $count = count($modules);
 
-        if(!$this->multiModulesConfirm(count($modules), 'deployed')) {
+        if(!$this->multiModulesConfirm($count, 'deployed')) {
             return false;
         }
 
@@ -653,8 +655,16 @@ class App extends BaseApp
             return $this->infoLine("You can use 'list' command to get all available modules.");
         }
 
+        $index = 0;
+
         foreach ($modules as $module) {
-            $this->outputLine("Deploying module '{$this->crLSkyblue()}%s{$this->crNull()}'", $module);
+            if($count > 1) {
+                $index ++;
+                $this->outputLine("{$index} > Deploying module '{$this->crLSkyblue()}%s{$this->crNull()}'", $module);
+            } else {
+                $this->outputLine("Deploying module '{$this->crLSkyblue()}%s{$this->crNull()}'", $module);
+            }
+
             $this->_deployModule($module);
         }
     }
@@ -677,8 +687,17 @@ class App extends BaseApp
             return $this->infoLine("You can use 'list' command to get all available modules.");
         }
 
+        $index = 0;
+        $count = count($modules);
+
         foreach ($modules as $module) {
-            $this->outputLine("Undeploying module '{$this->crLWhite()}%s{$this->crNull()}'", $module);
+            if($count > 1) {
+                $index ++;
+                $this->outputLine("{$index} > Undeploying module '{$this->crLSkyblue()}%s{$this->crNull()}'", $module);
+            } else {
+                $this->outputLine("Undeploying module '{$this->crLSkyblue()}%s{$this->crNull()}'", $module);
+            }
+
             $this->_undeployModule($module);
         }
     }
@@ -1087,8 +1106,12 @@ class App extends BaseApp
                         $linkInfoValue = \realpath($filePath);
 
                         if (!$linkInfoValue) {
-                            \fs\rm($filePath);
-                            $self->successLine("Removed invalid link: '%s'", $filePath);
+                            if($this->existsOption('c')) {
+                                $self->outputLine("Invalid link: '%s'", $filePath);
+                            } else {
+                                \fs\rm($filePath);
+                                $self->successLine("Removed invalid link: '%s'", $filePath);
+                            }
                         }
 
                     } catch (\Exception $e) {
@@ -1100,8 +1123,12 @@ class App extends BaseApp
                     if($this->existsOption('d')) {
                         if(fs\isempty($filePath)) {
                             try {
-                                rmdir($filePath);
-                                $self->successLine("Removed empty directory: '%s'", $filePath);
+                                if($this->existsOption('c')){
+                                    $self->outputLine("Empty directory: '%s'", $filePath);
+                                } else {
+                                    rmdir($filePath);
+                                    $self->successLine("Removed empty directory: '%s'", $filePath);
+                                }
                             } catch (Exception $e) {
                                 $self->_processException($e);
                             }
@@ -1840,7 +1867,7 @@ abstract class BaseApp extends BaseOutputInput
                     $result = fs\symlink($targetFullPath, $linkval);
 
                     if($result===true) {
-                        $this->successLine("%s => %s", $linkval, $relativeTargetPath);
+                        $this->successLine("%s => %s", $relativeTargetPath, $linkval);
                     } else {
                         $this->errorLine($result);
                     }
