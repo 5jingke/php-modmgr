@@ -71,6 +71,7 @@
  *
  * @modmgr-help-list
  * @d List the modules that matching wildcard
+ * Module name can't begin with a dot
  *
  * Usage: modmgr list [wildcard] [-aslo]
  *        modmgr l [wildcard] [-aslo]
@@ -1623,6 +1624,10 @@ abstract class BaseApp extends BaseOutputInput
         $result = [];
 
         foreach(fs\subdirs(fs\path\join($this->_modulePath)) as $module) {
+            if($module[0] == '.') {
+                continue;
+            }
+
             if(empty($wildcard) || str\matchwildcard($module, $wildcard)) {
                 if(!$opposite) {
                     $result []= $module;
