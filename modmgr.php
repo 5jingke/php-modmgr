@@ -221,7 +221,7 @@
  * @modmgr-help-map
  * @d Show mappings of modules
  *
- * Usage: modmgr map [wildcard] [-as]
+ * Usage: modmgr map [wildcard] [-asb]
  *
  * Mapping status format is [deployed+undeployed=total]
  * '(D)' flag means the reocrd of mapping was deployed
@@ -233,6 +233,7 @@
  * option:
  *     -a: Show mappings of all module
  *     -s: Simple mode. Only show mapping status of module
+ *     -b: Show absolute path
  *
  *
  * @modmgr-help-mapdel
@@ -428,7 +429,7 @@ class App extends BaseApp
         /**
          * @see _command_map
          */
-        'map' => ['s', 'a'],
+        'map' => ['s', 'a', 'b'],
 
         /**
          * @see _command_mapdel
@@ -843,7 +844,12 @@ class App extends BaseApp
         }
 
         if(!$single) {
-            $modules = $this->_getAvailableModules($module);
+            if($this->existsOption('a')) {
+                $modules = $this->_getAllModules($module);
+            } else {
+                $modules = $this->_getAvailableModules($module);
+            }
+
             foreach ($modules as $module) {
                 $this->_command_map([$module], true);
             }
@@ -856,7 +862,7 @@ class App extends BaseApp
         $targetPrefix = '';
         $maxPrefix = 0;
 
-        if($this->existsOption('a')) {
+        if($this->existsOption('b')) {
             $sourcePrefix = fs\path\join($this->_modulePath, $module);
             $targetPrefix = $this->_projectPath;
             $maxPrefix = strlen($sourcePrefix)+1;
@@ -982,14 +988,24 @@ class App extends BaseApp
 
         $modules = $this->_getAllModules($moduleWildcard);
         $ocwd = getcwd();
+        $count = count($modules);
 
-        if(!$this->multiModulesConfirm(count($modules), "executed git command")) {
+        if(!$this->multiModulesConfirm($count, "executed git command")) {
             return false;
         }
 
+        $index = 0;
+
         foreach ($modules as $module) {
             $cmd = sprintf('git %s', implode(' ', $args));
-            $this->outputLine("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()} > {$this->crGray()}%s{$this->crNull()}", $module, $cmd);
+
+            if($count > 1) {
+                $index ++;
+                $this->outputLine("{$index}: {$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()}: {$this->crGray()}%s{$this->crNull()}", $module, $cmd);
+            } else {
+                $this->outputLine("{$this->crLWhite()}Module: {$this->crSkyblue()}%s{$this->crNull()}: {$this->crGray()}%s{$this->crNull()}", $module, $cmd);
+            }
+
             $moduleParent = fs\path\join($this->_modulePath, $module);
             chdir($moduleParent);
             system($cmd);
@@ -1042,7 +1058,7 @@ class App extends BaseApp
         $index = 1;
 
         foreach ($args as $repo) {
-            $this->outputLine("%d > Clone '{$this->crLSkyblue()}%s{$this->crNull()}'", $index++, $repo);
+            $this->outputLine("%d: Clone '{$this->crLSkyblue()}%s{$this->crNull()}'", $index++, $repo);
             $module = preg_replace("#\.git$#i", '', \fs\path\basename($repo));
 
             if($this->existsOption('f')) {
