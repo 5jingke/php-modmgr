@@ -342,7 +342,7 @@ require_once 'lib.php';
 /**
  * Class App
  */
-class App extends BaseApp
+class App extends AppAutoComplete
 {
     /**
      * 数组键为支持的命令，值为该命令支持的选项
@@ -350,15 +350,9 @@ class App extends BaseApp
      *  短选项不使用 ‘-’ 如 ['a', 's'] 对应参数的 -as。
      *  短选项只允许单个字符。由一个或者多个‘-’组成
      *  如 -abcd 等价于 -a -b -c -d。短选项只是用作布尔值
-     *
-     * The key of array is supported commands in application and value is support options in the command.
-     *  Long option must fill with full name, such as ['--file'， '--dir'] is corresponding to '--file', '--dir' in parameter.
-     *  Short option does not use '-', such as ['a', 's'] is corresponding to '-as' in parameter.
-     *  Short option only use single letter and it can be made up of one or more '-', such as '-abcd' Equivalent to '-a' '-b' '-c' '-d'.
-     *  Short option only use as a bool value.
      * @var array
      */
-    protected $_commondList = [
+    protected $_commandList = [
         /**
          * @see _command_help
          */
@@ -458,8 +452,12 @@ class App extends BaseApp
         'rm' => 'remove',
         'disable' => [],
         'enable' => [],
+        'auto-complete' => [],
     ];
-
+    protected $_noNeedToInit = [
+        'help', 'version', 'initialize', 'persistent', 'cwd',
+        'elev-priv', 'clean', 'show', 'auto-complete'
+    ];
     protected $_isPersistentMode = false;
 
     protected function _command_help($args)
@@ -472,7 +470,7 @@ class App extends BaseApp
         }
 
         if(empty($command)) {
-            $commandList = array_filter(array_keys($this->_commondList));
+            $commandList = array_filter(array_keys($this->_commandList));
             $maxLength = ary\maxlength($commandList);
 
             foreach($commandList as $i => $_command) {
@@ -484,7 +482,7 @@ class App extends BaseApp
 
             $commands = '      '.implode(io\endline() . "       ", $commandList);
             $command = '-';
-        } else if(!isset($this->_commondList[$command])) {
+        } else if(!isset($this->_commandList[$command])) {
             return $this->input("Command '%s' not found", $command);
         }
 
@@ -513,9 +511,9 @@ class App extends BaseApp
     protected function _command_version()
     {
         if ($this->existsOption('s')) {
-            echo MODMGR_VERSION;
+            $this->outputLine(MODMGR_VERSION);
         } else {
-            echo 'Module Manager Version: ' . MODMGR_VERSION;
+            echo $this->outputLine('Module Manager Version: ' . MODMGR_VERSION);
         }
     }
 
@@ -1334,6 +1332,11 @@ abstract class BaseOutputInput extends BaseOptionSupport
 {
     protected $_isFirstOutput = true;
     protected $_enableOutput = true;
+
+    /**
+     * 颜色代码
+     * @var array
+     */
     public $OUTPUT_COLOR = [
         "NULL" => "\033[0;0m",
 
@@ -1363,6 +1366,15 @@ abstract class BaseOutputInput extends BaseOptionSupport
         }
 
         return fgets(STDIN);
+    }
+
+    public function inputOneChar($message)
+    {
+        if(count(func_get_args()) > 0) {
+            call_user_func_array([$this, 'output'], func_get_args());
+        }
+
+        return stream_get_contents(STDIN, 1);
     }
 
     public function inputYN() {
@@ -1491,9 +1503,7 @@ abstract class BaseOutputInput extends BaseOptionSupport
  */
 abstract class BaseApp extends BaseOutputInput
 {
-    protected $_commondList = [];
-    protected $_noNeedToInit = ['help', 'version', 'initialize', 'persistent', 'cwd',
-        'elev-priv', 'clean', 'show'];
+    protected $_commandList = [];
 
     protected $_command;
     protected $_targetCommand;
@@ -1663,20 +1673,23 @@ abstract class BaseApp extends BaseOutputInput
         return true;
     }
 
-    protected function _getAllModules($wildcard, $opposite=false) {
+    protected function _getAllModules($wildcard=null, $opposite=false) {
         $result = [];
+        $path = fs\path\join($this->_modulePath);
 
-        foreach(fs\subdirs(fs\path\join($this->_modulePath)) as $module) {
-            if($module[0] == '.') {
-                continue;
-            }
+        if(fs\isdir($path)) {
+            foreach(fs\subdirs($path) as $module) {
+                if($module[0] == '.') {
+                    continue;
+                }
 
-            if(empty($wildcard) || str\matchwildcard($module, $wildcard)) {
-                if(!$opposite) {
+                if(empty($wildcard) || str\matchwildcard($module, $wildcard)) {
+                    if(!$opposite) {
+                        $result []= $module;
+                    }
+                } else if($opposite) {
                     $result []= $module;
                 }
-            } else if($opposite) {
-                $result []= $module;
             }
         }
 
@@ -2023,8 +2036,8 @@ abstract class BaseApp extends BaseOutputInput
     {
         $command = strval($command);
 
-        while(is_string($this->_commondList[$command])) {
-            $newCommand = $this->_commondList[$command];
+        while(is_string($this->_commandList[$command])) {
+            $newCommand = $this->_commandList[$command];
 
             if($command == $newCommand) {
                 return 'help';
@@ -2037,11 +2050,11 @@ abstract class BaseApp extends BaseOutputInput
     }
 
     protected function _getCommandSupportOptions() {
-        return $this->_commondList[$this->_targetCommand];
+        return $this->_commandList[$this->_targetCommand];
     }
 
     protected function _isCommandNotFound() {
-        if(!isset($this->_commondList[$this->_targetCommand])) {
+        if(!isset($this->_commandList[$this->_targetCommand])) {
             return true;
         }
 
@@ -2120,6 +2133,93 @@ abstract class BaseApp extends BaseOutputInput
 
         $document[$index]['detail'] = ' ' . trim(implode(\io\endline(), $document[$index]['detail']));
         return $document;
+    }
+}
+
+abstract class AppAutoComplete extends BaseApp
+{
+    protected function _command_auto_complete($args)
+    {
+        $argc = count($args);
+        $cmd = $args[0];
+
+        if($argc == 1) {
+            $result = $this->_matchAutoCompltetArray($cmd, array_keys($this->_commandList));
+
+            if($result != $cmd) {
+                echo $result;
+                return;
+            }
+        }
+
+        if(empty($cmd)) {
+            return ;
+        }
+
+        $cmd = $this->_getTargetCommand($cmd);
+
+        if($args[1][0] == '-') {
+            $options = $this->_getAutoCompltetArray($cmd);
+            echo $this->_matchAutoCompltetArray($args[1], $options);
+            return ;
+        }
+
+        $cmd = str_replace("-", "_", $cmd);
+        $method = '_cac_' . $cmd;
+        unset($args[0]);
+
+        if(method_exists($this, $method)) {
+            $this->$method($args[1], array_values($args), count($args));
+        }
+    }
+
+    public function _cac_list($now, $args, $argc) {
+        echo $this->_matchAutoCompltetArray($now, $this->_getAllModules());
+    }
+
+    protected function _matchAutoCompltetArray($str, $ary)
+    {
+        $cmdLen = strlen($str);
+        $matchs = [];
+
+        if(!empty($str)) {
+            foreach ($ary as $c) {
+                if(substr($c,0, $cmdLen) == $str) {
+                    $matchs []= $c;
+                }
+            }
+        } else {
+            $matchs = $ary;
+        }
+
+        if(count($matchs) <= 1) {
+            return $matchs[0];
+        } else {
+            return "(" . implode(' ', $matchs);
+        }
+    }
+
+    protected function _getAutoCompltetArray($cmd)
+    {
+        $ary = [];
+
+        foreach($this->_globalOptionsSupports as $op) {
+            if($op[0] != '-') {
+                $op = '-' . $op;
+            }
+
+            $ary []= $op;
+        }
+
+        foreach($this->_commandList[$cmd] as $op) {
+            if($op[0] != '-') {
+                $op = '-' . $op;
+            }
+
+            $ary []= $op;
+        }
+
+        return $ary;
     }
 }
 
