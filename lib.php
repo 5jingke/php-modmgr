@@ -71,21 +71,15 @@ namespace fs {
 
     function rm($path, $rmtree=false) {
         if (islink($path)) {
-            if(PHP_OS == 'WINNT') {
+            if(\console\iswindows()) {
                 try{
                     return rmfile($path);
                 } catch (\Exception $e) {
-                    echo $e->getMessage();
-                    $output = [];
-                    $result = 2;
-                    $cmd = sprintf('rmdir "%s" 2>&1', $path);
-                    exec($cmd, $output, $result);
-
-                    if($result == 0) {
-                        return true;
-                    } else {
-                        throw new \Exception(iconv('GB2312', 'UTF-8', $output[0]) . " ($cmd)", 2);
+                    if(!\console\execwincmd('rmdir', [$path], $output)) {
+                        throw \console\exception($output);
                     }
+                    
+                    return true;
                 }
             } else {
                 return rmfile($path);
@@ -100,28 +94,22 @@ namespace fs {
     }
 
     function symlink($linkpath, $target) {
-        if(PHP_OS == 'WINNT') {
-            $params = ' ';
+        if(\console\iswindows()) {
+            $args = [];
 
             if(isdir($target)) {
-                $params = ' /D ';
+                $args []= '/D';
             }
 
             $linkpath = str_replace('/', '\\', $linkpath);
             $target = str_replace('/', '\\', $target);
-            $output = [];
-            $result = 2;
-            // $sudo = sprintf('wscript "%s"', \dirname($_SERVER['argv'][0]) . '/' . 'sudo.vbs');
-            // $mklink = sprintf('"%s"', \dirname($_SERVER['argv'][0]) . '/' . 'mklink.bat');
-            $cmd = sprintf('mklink%s"%s" "%s" 2>&1', $params, $linkpath, $target);
-            exec($cmd, $output, $result);
-
-            if($result == 0) {
-                return true;
-            } else {
-                trigger_error("$cmd ".iconv('GB2312', 'UTF-8', $output[0]), E_USER_ERROR);
-                return false;
+            $args = \ary\concat($args, [$linkpath, $target]);
+            
+            if(!\console\execwincmd('mklink', $args, $output)) {
+                throw \console\exception($output);
             }
+            
+            return true;
         }
 
         return \symlink($target, $linkpath);
@@ -304,7 +292,7 @@ namespace io {
     }
 
     function endline() {
-        if(PHP_OS == 'WINNT') {
+        if(\console\iswindows()) {
             return "\r\n";
         } else {
             return "\n";
@@ -519,13 +507,9 @@ namespace str {
 
 namespace console {
     function cols($default=80) {
-        if(PHP_OS == "WINNT") {
-            exec('mode con 2>&1', $output, $result);
-
-            if($result == 0) {
-                $content = iconv('GB2312', 'UTF-8', implode("\n",  $output));
-                preg_match("#^.*?:\s*\-+\s*.*\s*.*?:.*?([0-9]+)#",trim($content), $matchs);
-
+        if(\console\iswindows()) {
+            if(execwincmd('mode con', null, $output)) {
+                preg_match("#^.*?:\s*\-+\s*.*\s*.*?:.*?([0-9]+)#",trim($output), $matchs);
                 $cols = intval($matchs[1]);
 
                 if(!$cols) {
@@ -533,11 +517,65 @@ namespace console {
                 }
 
                 return $cols;
-            } else {
-                return $default;
             }
-        } else {
-            return $default;
         }
+        
+        return $default;
+    }
+    
+    function execwincmddirectly($cmd, $args=[], $unused=null) {
+        $cmd = implode(' ', [$cmd, packargs($args), ' 2>&1']);
+        system($cmd);
+    }
+
+    function execwincmdresult($cmd, $args=[], $unused=null) {
+        execwincmd($cmd, $args, $output);
+        return $output;
+    }
+    
+    function execwincmd($cmd, $args=[], &$output=null, $convert=true) {
+        if(iswindows()) {
+            $cmd = implode(' ', [$cmd, packargs($args), ' 2>&1']);
+            exec($cmd, $output, $result);
+
+            if($result == 0) {
+                if($convert) {
+                    $output = iconv('GB2312', 'UTF-8', implode(\io\endline(), $output));
+                } else {
+                    $output = implode(\io\endline(), $output);
+                }
+            } else {
+                if($convert) {
+                    $output = iconv('GB2312', 'UTF-8', $output[0]);
+                } else {
+                    $output = $output[0];
+                }
+                $output .= " ($cmd)";
+            }
+
+            return $result == 0;
+        }
+        
+        return false;
+    }
+    
+    function iswindows(){
+        return strtoupper(PHP_OS) == "WINNT";
+    }
+    
+    function packargs($args) {
+        $args = empty($args) ? [] : $args;
+        
+        foreach($args as $i => $arg) {
+            if(strpos(" ", $arg)) {
+                $args[$i] = "\"$arg\"";
+            }
+        }
+        
+        return implode(' ', $args);
+    }
+    
+    function exception($msg, $code=2) {
+        return new \Exception($msg, $code);
     }
 }

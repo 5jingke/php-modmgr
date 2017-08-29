@@ -335,6 +335,7 @@ define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
 define('MODMGR_DISABLED', '.modmgr.disabled');
+define('MODMGR_AUTOCOMPLETION_SH', 'modmgr-auto-completion.sh');
 
 error_reporting(ERROR_REPORTING);
 require_once 'lib.php';
@@ -357,7 +358,7 @@ class App extends AppAutoComplete
          * @see _command_help
          */
         'help' => [],
-        '' => 'help',
+        '' => ['--test', '--install-bash-completion'],
 
         /**
          * @see _command_list
@@ -456,10 +457,25 @@ class App extends AppAutoComplete
     ];
     protected $_noNeedToInit = [
         'help', 'version', 'initialize', 'persistent', 'cwd',
-        'elev-priv', 'clean', 'show', 'auto-complete'
+        'elev-priv', 'clean', 'show', 'auto-complete', ''
     ];
     protected $_isPersistentMode = false;
 
+    protected function _command_($args)
+    {
+        if($this->existsOption('--test')) {
+            echo 1;
+            return true;
+        }
+
+        if($this->existsOption('--install-bash-completion')) {
+            $this->_command_install_gitbash_completion();
+            return true;
+        }
+        
+        return $this->_command_help($args);
+    }
+    
     protected function _command_help($args)
     {
         $command = $args[0];
@@ -524,7 +540,7 @@ class App extends AppAutoComplete
         }
 
         if ($this->existsOption('--admin-shell')) {
-            if(PHP_OS == "WINNT") {
+            if(\console\iswindows()) {
                 $shell = strtolower(trim($this->getOption('--admin-shell')));
 
                 if(empty($shell)) {
@@ -564,7 +580,6 @@ class App extends AppAutoComplete
         }
 
         $this->_isPersistentMode = true;
-        $this->setOption('--persistent-mode');
 
         while(true) {
             $command = trim($this->input(" {$this->crLPurple()}MODMGR{$this->crNull()} {$this->crWhite()}%s> {$this->crNull()}", getcwd()));
@@ -1012,7 +1027,7 @@ class App extends AppAutoComplete
     }
 
     protected function _command_elev_priv($args) {
-        if(PHP_OS != "WINNT") {
+        if(!\console\iswindows()) {
             return;
         }
 
@@ -1273,7 +1288,7 @@ class App extends AppAutoComplete
  */
 abstract class BaseOptionSupport
 {
-    protected $_globalOptionsSupports = ['--nocolor', '--nooutput', '--persistent-mode', '--help'];
+    protected $_globalOptionsSupports = ['--nocolor', '--nooutput', '--help'];
     protected $_options=[];
 
     /**
@@ -1522,10 +1537,6 @@ abstract class BaseApp extends BaseOutputInput
             return false;
         }
 
-        if(empty($this->_command)) {
-            $this->_setCommand('help');
-        }
-
         if($dispatch) {
             $this->dispatch();
         }
@@ -1610,7 +1621,7 @@ abstract class BaseApp extends BaseOutputInput
         return true;
     }
 
-    protected function _getAvailableModules($wildcard, $opposite=false)
+    protected function _getAvailableModules($wildcard=null, $opposite=false)
     {
         $result = [];
 
@@ -2040,7 +2051,7 @@ abstract class BaseApp extends BaseOutputInput
             $newCommand = $this->_commandList[$command];
 
             if($command == $newCommand) {
-                return 'help';
+                return '';
             }
 
             $command = $newCommand;
@@ -2138,46 +2149,49 @@ abstract class BaseApp extends BaseOutputInput
 
 abstract class AppAutoComplete extends BaseApp
 {
-    protected function _command_auto_complete($args)
-    {
-        $argc = count($args);
-        $cmd = $args[0];
-
+    protected function _cac_list($current, $args, $argc) {
         if($argc == 1) {
-            $result = $this->_matchAutoCompltetArray($cmd, array_keys($this->_commandList));
-
-            if($result != $cmd) {
-                echo $result;
-                return;
-            }
-        }
-
-        if(empty($cmd)) {
-            return ;
-        }
-
-        $cmd = $this->_getTargetCommand($cmd);
-
-        if($args[1][0] == '-') {
-            $options = $this->_getAutoCompltetArray($cmd);
-            echo $this->_matchAutoCompltetArray($args[1], $options);
-            return ;
-        }
-
-        $cmd = str_replace("-", "_", $cmd);
-        $method = '_cac_' . $cmd;
-        unset($args[0]);
-
-        if(method_exists($this, $method)) {
-            $this->$method($args[1], array_values($args), count($args));
+            $this->_listAutoCompleteModules($current, true);
         }
     }
 
-    public function _cac_list($now, $args, $argc) {
-        echo $this->_matchAutoCompltetArray($now, $this->_getAllModules());
+    protected function _cac_help($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_matchAutoCompltetArray($current, array_keys($this->_commandList), true);
+        }
     }
 
-    protected function _matchAutoCompltetArray($str, $ary)
+    protected function _cac_show($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_matchAutoCompltetArray($current, ['module-path','project-path','script-path' ], true);
+        }
+    }
+
+    protected function _cac_deploy($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_listAutoCompleteModules($current, false);
+        }
+    }
+
+    protected function _cac_undeploy($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_listAutoCompleteModules($current, false);
+        }
+    }
+
+    protected function _cac_map($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_listAutoCompleteModules($current, true);
+            return ;
+        }
+    }
+
+    protected function _listAutoCompleteModules($current, $all=true)
+    {
+        $this->_matchAutoCompltetArray($current, $all ? $this->_getAllModules() : $this->_getAvailableModules(), true);
+    }
+    
+    protected function _matchAutoCompltetArray($str, $ary, $output=false)
     {
         $cmdLen = strlen($str);
         $matchs = [];
@@ -2193,10 +2207,16 @@ abstract class AppAutoComplete extends BaseApp
         }
 
         if(count($matchs) <= 1) {
-            return $matchs[0];
+            $result = $matchs[0];
         } else {
-            return "(" . implode(' ', $matchs);
+            $result = "(" . implode(' ', $matchs);
         }
+        
+        if($output) {
+            echo $result;
+        }
+        
+        return $result;
     }
 
     protected function _getAutoCompltetArray($cmd)
@@ -2221,6 +2241,85 @@ abstract class AppAutoComplete extends BaseApp
 
         return $ary;
     }
+    
+    protected function _command_auto_complete($args)
+    {
+        $args = array_map(function($row) {return trim($row, '"');}, $args);
+        $argc = count($args);
+        $cmd = $args[0];
+
+        if($cmd[0] == '-') {
+            $cmd = "";
+        } else {
+            unset($args[0]);
+        }
+        
+        $targetCmd = $this->_getTargetCommand($cmd);
+        $args = array_values($args);
+        $args = array_reverse($args);
+        
+        $current = $args[0];
+        
+        if($current[0] == '-') {
+            $options = $this->_getAutoCompltetArray($targetCmd);
+            $this->_matchAutoCompltetArray($current, $options, true);
+            return;
+        }
+        
+        if($argc <= 1) {
+            $this->_matchAutoCompltetArray($cmd, array_keys($this->_commandList), true);
+            return;
+        }
+
+        if(empty($cmd)) {
+            return;
+        }
+
+        $targetCmd = str_replace("-", "_", $targetCmd);
+        $method = '_cac_' . $targetCmd;
+
+        if(method_exists($this, $method)) {
+            $this->$method($current, $args, count($args));
+        }
+    }
+    
+    protected function _outputAutoCompleteResult($current, $result)
+    {
+        echo trim($result) == trim($current) ? '' : $result;
+    }
+
+    protected function _command_install_gitbash_completion()
+    {
+        if(\console\iswindows()) {
+            if(\console\execwincmd('git', ['--exec-path'], $output)) {
+                $gitPath = dirname($output, 3);
+                $installTargetFile = \fs\path\join($gitPath, 'etc', 'profile.d', MODMGR_AUTOCOMPLETION_SH);
+                $installOriginFile = \fs\path\join(dirname($this->_scriptPath), MODMGR_AUTOCOMPLETION_SH);
+                
+                if(!\fs\isfile($installOriginFile)) {
+                    return $this->errorLine("File '%s' is not exists", $installOriginFile);
+                }
+                
+                if(\fs\isdir(dirname($installTargetFile))) {
+                    if(\fs\isdir($installTargetFile)) {
+                        return $this->errorLine("Can't create link '%s', there is an existed directory", $installTargetFile);
+                    }
+                    
+                    if((\fs\islink($installTargetFile) or \fs\exists($installTargetFile))) {
+                        \fs\rm($installTargetFile);
+                    }
+                    
+                    try {
+                        \fs\symlink($installTargetFile, $installOriginFile);
+                        return $this->successLine("Install successfully");
+                    } catch(Exception $e) {
+                        $this->_processException($e);
+                    }
+                }
+            }
+        }
+    }
+    
 }
 
 /**
