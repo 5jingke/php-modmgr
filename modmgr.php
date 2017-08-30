@@ -337,6 +337,10 @@ define('MODMGR_MAPPING_NAME', 'modman');
 define('MODMGR_DISABLED', '.modmgr.disabled');
 define('MODMGR_AUTOCOMPLETION_SH', 'modmgr-auto-completion.sh');
 
+define('AUTOCOM_TYPE_STR', '#');
+define('AUTOCOM_TYPE_ARY', '(');
+define('AUTOCOM_TYPE_FS', 'F');
+
 error_reporting(ERROR_REPORTING);
 require_once 'lib.php';
 
@@ -472,10 +476,10 @@ class App extends AppAutoComplete
             $this->_command_install_gitbash_completion();
             return true;
         }
-        
+
         return $this->_command_help($args);
     }
-    
+
     protected function _command_help($args)
     {
         $command = $args[0];
@@ -514,7 +518,10 @@ class App extends AppAutoComplete
         $detail = $docs[$command]['detail'];
         $detail = str_replace('"', '\"', $detail);
         $detail = eval(sprintf('return "%s";', $detail));
-        $this->outputLine($detail . io\endline());
+
+        if(!empty(trim($detail))) {
+            $this->outputLine($detail . io\endline());
+        }
 
         return true;
     }
@@ -2152,6 +2159,7 @@ abstract class AppAutoComplete extends BaseApp
     protected function _cac_list($current, $args, $argc) {
         if($argc == 1) {
             $this->_listAutoCompleteModules($current, true);
+            return;
         }
     }
 
@@ -2186,11 +2194,23 @@ abstract class AppAutoComplete extends BaseApp
         }
     }
 
+    protected function _cac_mapadd($current, $args, $argc) {
+        if($argc == 1) {
+            $this->_listAutoCompleteModules($current, true);
+            return ;
+        }
+
+        if($argc == 2) {
+            echo $this->_autoCompleteResult($current, AUTOCOM_TYPE_FS);
+            return ;
+        }
+    }
+
     protected function _listAutoCompleteModules($current, $all=true)
     {
         $this->_matchAutoCompltetArray($current, $all ? $this->_getAllModules() : $this->_getAvailableModules(), true);
     }
-    
+
     protected function _matchAutoCompltetArray($str, $ary, $output=false)
     {
         $cmdLen = strlen($str);
@@ -2206,16 +2226,12 @@ abstract class AppAutoComplete extends BaseApp
             $matchs = $ary;
         }
 
-        if(count($matchs) <= 1) {
-            $result = $matchs[0];
-        } else {
-            $result = "(" . implode(' ', $matchs);
-        }
-        
+        $result = $this->_autoCompleteResult($matchs);
+
         if($output) {
             echo $result;
         }
-        
+
         return $result;
     }
 
@@ -2241,7 +2257,7 @@ abstract class AppAutoComplete extends BaseApp
 
         return $ary;
     }
-    
+
     protected function _command_auto_complete($args)
     {
         $args = array_map(function($row) {return trim($row, '"');}, $args);
@@ -2253,19 +2269,19 @@ abstract class AppAutoComplete extends BaseApp
         } else {
             unset($args[0]);
         }
-        
+
         $targetCmd = $this->_getTargetCommand($cmd);
         $args = array_values($args);
         $args = array_reverse($args);
-        
+
         $current = $args[0];
-        
+
         if($current[0] == '-') {
             $options = $this->_getAutoCompltetArray($targetCmd);
             $this->_matchAutoCompltetArray($current, $options, true);
             return;
         }
-        
+
         if($argc <= 1) {
             $this->_matchAutoCompltetArray($cmd, array_keys($this->_commandList), true);
             return;
@@ -2282,7 +2298,7 @@ abstract class AppAutoComplete extends BaseApp
             $this->$method($current, $args, count($args));
         }
     }
-    
+
     protected function _outputAutoCompleteResult($current, $result)
     {
         echo trim($result) == trim($current) ? '' : $result;
@@ -2292,23 +2308,23 @@ abstract class AppAutoComplete extends BaseApp
     {
         if(\console\iswindows()) {
             if(\console\execwincmd('git', ['--exec-path'], $output)) {
-                $gitPath = dirname($output, 3);
+                $gitPath = fs\path\parent($output, 3);
                 $installTargetFile = \fs\path\join($gitPath, 'etc', 'profile.d', MODMGR_AUTOCOMPLETION_SH);
                 $installOriginFile = \fs\path\join(dirname($this->_scriptPath), MODMGR_AUTOCOMPLETION_SH);
-                
+
                 if(!\fs\isfile($installOriginFile)) {
                     return $this->errorLine("File '%s' is not exists", $installOriginFile);
                 }
-                
+
                 if(\fs\isdir(dirname($installTargetFile))) {
                     if(\fs\isdir($installTargetFile)) {
                         return $this->errorLine("Can't create link '%s', there is an existed directory", $installTargetFile);
                     }
-                    
+
                     if((\fs\islink($installTargetFile) or \fs\exists($installTargetFile))) {
                         \fs\rm($installTargetFile);
                     }
-                    
+
                     try {
                         \fs\symlink($installTargetFile, $installOriginFile);
                         return $this->successLine("Install successfully");
@@ -2319,7 +2335,93 @@ abstract class AppAutoComplete extends BaseApp
             }
         }
     }
-    
+
+    /**
+     * 自动列出目录文件
+     * @param null $match
+     * @param bool $colorful
+     */
+    protected function _autoCompleteListDir($match=null, $colorful=true)
+    {
+        $result = [];
+        $oldMatchparent = \fs\path\parent($match);
+
+        if($oldMatchparent == '.') {
+            $oldMatchparent = "";
+        }
+
+        $match = trim($match);
+        $matchAbsolute = fs\path\absolute($match);
+
+        if(preg_match("#[/\\\\]$#", $match)) {
+            $match = '';
+        }
+
+        if($match == '') {
+            $dir = $matchAbsolute;
+        } else {
+            $dir = dirname($matchAbsolute);
+            $match = basename($match);
+        }
+
+        if(!\fs\isdir($dir)) {
+            return ;
+        }
+
+        $matchLen = strlen($match);
+
+        foreach(array_diff(scandir($dir), ['.', '..']) as $sub) {
+
+            if(!empty($match)) {
+                if(console\iswindows()) {
+                    if(strtolower(substr($sub, 0, $matchLen)) != strtolower($match)) {
+                        continue;
+                    }
+                } else {
+                    if(substr($sub, 0, $matchLen) != $match) {
+                        continue;
+                    }
+                }
+            }
+
+            $abs = \fs\path\join($dir, $sub);
+            if(\fs\islink($abs)) {
+                if($colorful) {
+                    $result []= "{$this->crLPurple()}$sub{$this->crNull()}";
+                } else {
+                    $result []= $sub;
+                }
+            } else if (\fs\isdir($abs)) {
+                if($colorful) {
+                    $result []= "{$this->crLSkyblue()}$sub . '/'.{$this->crNull()}";
+                } else {
+                    $result []= $sub. '/';
+                }
+            } else {
+                $result []= $sub;
+            }
+        }
+
+        echo $this->_autoCompleteResult($result);
+    }
+
+    protected function _autoCompleteResult($result=null, $resultType='')
+    {
+        if(empty($resultType)) {
+            if(is_array($result)) {
+                if(count($result) <= 1) {
+                    return AUTOCOM_TYPE_STR . $result[0];
+                } else {
+                    return AUTOCOM_TYPE_ARY .
+                        implode(' ', $result);
+                }
+            } else {
+                return AUTOCOM_TYPE_STR . $result;
+            }
+        } else {
+            return $resultType.$result;
+        }
+    }
 }
 
 /**

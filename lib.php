@@ -78,7 +78,7 @@ namespace fs {
                     if(!\console\execwincmd('rmdir', [$path], $output)) {
                         throw \console\exception($output);
                     }
-                    
+
                     return true;
                 }
             } else {
@@ -104,11 +104,11 @@ namespace fs {
             $linkpath = str_replace('/', '\\', $linkpath);
             $target = str_replace('/', '\\', $target);
             $args = \ary\concat($args, [$linkpath, $target]);
-            
+
             if(!\console\execwincmd('mklink', $args, $output)) {
                 throw \console\exception($output);
             }
-            
+
             return true;
         }
 
@@ -169,7 +169,7 @@ namespace fs\path {
         return standard(implode('/', $paths));
     }
 
-    function absolute($path) {
+    function absolute($path=null) {
         if(empty($path)) {
             return standard(getcwd());
         }
@@ -519,10 +519,10 @@ namespace console {
                 return $cols;
             }
         }
-        
+
         return $default;
     }
-    
+
     function execwincmddirectly($cmd, $args=[], $unused=null) {
         $cmd = implode(' ', [$cmd, packargs($args), ' 2>&1']);
         system($cmd);
@@ -532,7 +532,7 @@ namespace console {
         execwincmd($cmd, $args, $output);
         return $output;
     }
-    
+
     function execwincmd($cmd, $args=[], &$output=null, $convert=true) {
         if(iswindows()) {
             $cmd = implode(' ', [$cmd, packargs($args), ' 2>&1']);
@@ -555,26 +555,26 @@ namespace console {
 
             return $result == 0;
         }
-        
+
         return false;
     }
-    
+
     function iswindows(){
         return strtoupper(PHP_OS) == "WINNT";
     }
-    
+
     function packargs($args) {
         $args = empty($args) ? [] : $args;
-        
+
         foreach($args as $i => $arg) {
-            if(strpos(" ", $arg)) {
+            if(strpos($arg," ")) {
                 $args[$i] = "\"$arg\"";
             }
         }
-        
+
         return implode(' ', $args);
     }
-    
+
     function exception($msg, $code=2) {
         return new \Exception($msg, $code);
     }

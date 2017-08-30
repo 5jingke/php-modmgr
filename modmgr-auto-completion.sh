@@ -1,8 +1,10 @@
+#!/usr/bin/env bash
 _modmgr_completion_calculator() {
     args=""
-    
-    for ((i=1; i<${#COMP_WORDS[*]}; i++))  
-    do  
+    current="${COMP_WORDS[COMP_CWORD]}"
+
+    for ((i=1; i<${#COMP_WORDS[*]}; i++))
+    do
         findres=$(echo ${COMP_WORDS[i]} | grep " ")
         if [ "$findres" != "" ] ; then
           args="$args \"${COMP_WORDS[i]}\""
@@ -16,15 +18,31 @@ _modmgr_completion_calculator() {
     done
 
     result=`modmgr auto-complete -- $args`
-#    result=`echo "$result" | sed "s/^[ \s]\{1,\}//g;s/[ \s]\{1,\}$//g"`
-    
+
     if [ "$result" != ""  ] ; then
-        if [ "${result:0:1}" == "(" ] ; then
-            COMPREPLY=(${result:1})
-        else
+        resulttype=${result:0:1}
+        result=${result:1}
+echo "$resulttype"
+        if [ "$resulttype" == "(" ] ; then
+            COMPREPLY=(${result})
+        elif [ "$resulttype" == "#" ] ; then
             if [ "$result" != "" ] ; then
                 COMPREPLY="$result"
             fi
+        elif [ "$resulttype" == "F" ] ; then
+
+            compopt -o filenames
+            local files=()
+
+            if [ "$current" = "" ] ; then
+                files=(""*)
+            else
+                files=("${current}/"*)
+            fi
+
+#            echo ${files[@]// /\ };
+            COMPREPLY=( "${files[@]// /\ }" )
+            return 0
         fi
     fi
 }
