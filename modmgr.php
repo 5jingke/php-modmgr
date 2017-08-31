@@ -335,7 +335,7 @@ define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
 define('MODMGR_DIR_NAME', '.modman');
 define('MODMGR_MAPPING_NAME', 'modman');
 define('MODMGR_DISABLED', '.modmgr.disabled');
-define('MODMGR_AUTOCOMPLETION_SH', 'modmgr-auto-completion.sh');
+define('MODMGR_AUTOCOMPLETION_SH', 'modmgr-completion.sh');
 
 define('AUTOCOM_TYPE_STR', '#');
 define('AUTOCOM_TYPE_ARY', '(');
