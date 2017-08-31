@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Colpletion for modmgr
+# Jinko Wu <jk@5jk.me>
+# https://gitee.com/jinko/php-modmgr
+#
 
 #
 # 初始化modmgr的options
