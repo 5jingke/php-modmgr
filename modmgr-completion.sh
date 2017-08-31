@@ -81,7 +81,7 @@ _modmgr_processingoption() {
 # 处理命令
 #
 _modmgr_processingcmd() {
-    if [ "$argcount" -lt 2 ] ; then
+    if [ "$argpos" = 1 ] ; then
         if [ "$current" = "" ] ; then
             COMPREPLY=("${_modmgrcmds[@]}")
         else
@@ -103,14 +103,15 @@ _modmgr_listmodules() {
     cd "$modmgrpath/.modman"
     local result=""
 
-    for dir in $(ls | grep "/$")
+    for dir in $(ls -F | grep "/$")
     do
         dir=${dir/\//}
-        dir=${dir/ /\ }
-        result="$result $dir" #先判断是否是目录，然后再输出
+        dir=${dir/ /\\ }
+        result="$result
+$dir"
     done
-    echo $result
     cd "$cwd"
+    echo $result
 }
 
 #
@@ -132,14 +133,44 @@ _modmgr_findmodman() {
 }
 
 #
-# 完成模块名补全
+# 完成指定参数位置为2的模块名补全
 #
-_modmgr_completemodulename() {
-    if [ "$argcount" -lt 3 ] ; then
-        COMPREPLY=($(compgen -W "$(_modmgr_listmodules)" -- "$current"))
+_modmgr_completemodulepos() {
+    local IFS=$'\n'
+
+    if [ "$argpos" = 2 ] ; then
+        _modmgr_completemodulename
         return 1
     fi
 }
+
+#
+# 模块名补全
+#
+_modmgr_completemodulename() {
+    local IFS=$'\n'
+
+    if [ ! -e "$modmgrpath" ] ; then
+        return 1
+    fi
+
+    cd "$modmgrpath/.modman"
+    local result=""
+
+    for dir in $(ls -F | grep "/$")
+    do
+        dir=${dir//\//}
+        result="$result
+$dir"
+    done
+    cd "$cwd"
+
+    local results=$(compgen -W "$result" -- "$current")
+    results=${results// /\\ }
+    COMPREPLY=($results)
+}
+
+
 
 #
 # 过滤 -- 参数
@@ -147,10 +178,13 @@ _modmgr_completemodulename() {
 _modmgr_processingemptyoption() {
     for((i=1; i<${#COMP_WORDS[*]}; i++))
     do
+        if [ "${COMP_WORDS[i]:0:1}" = "-" ] ; then
+            argpos=$(expr $argpos - 1)
+        fi
+
         if [ "${COMP_WORDS[i]}" = "--" ] ; then
             if [ "$i" != "$COMP_CWORD" ] ; then
                 nooption="1"
-                break
             fi
         fi
     done
@@ -161,6 +195,10 @@ _modmgr_processingemptyoption() {
     fi
 }
 
+#
+# 完成文件或目录名
+# 参数1: 文件类型 f:文件, d:目录, 为空表示全部
+#
 _modmgr_completefilename() {
     _modmgr_compoptnospace
     local currentIFS=$IFS
@@ -175,6 +213,10 @@ _modmgr_completefilename() {
     dir=${dir//\\ / }
 
     if [ "$dir" != "." ] ; then
+        if [ ! -d "$dir" ] ; then
+            return 1
+        fi
+
         cd "$dir"
     else
         dir=""
@@ -248,27 +290,158 @@ ${file// /\ }"
 # list command 补全
 #
 _modmgr_completion_list() {
-    _modmgr_completemodulename
+    _modmgr_completemodulepos
     if [ "$?" = "1" ] ; then
         return 1
     fi
 }
+_modmgr_completion_l() {
+    _modmgr_completion_list
+    return $?
+}
 
 #
-# git command 补全
+# git 补全
 #
 _modmgr_completion_git() {
-    _modmgr_completemodulename
+    _modmgr_completemodulepos
     if [ "$?" = "1" ] ; then
         return 1
     fi
 }
 
 #
-# mapadd command 补全
+# deploy 补全
+#
+_modmgr_completion_deploy() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+_modmgr_completion_d() {
+    _modmgr_completion_deploy
+    return $?
+}
+
+#
+# undeploy 补全
+#
+_modmgr_completion_undeploy() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+_modmgr_completion_ud() {
+    _modmgr_completion_undeploy
+    return $?
+}
+
+#
+# mapdel 补全
+#
+_modmgr_completion_mapdel() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
+# mapdel 补全
+#
+_modmgr_completion_map() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
+# elev-priv 补全
+#
+_modmgr_completion_elev_priv() {
+    if [ "$argpos" = 2 ] ; then
+        COMPREPLY=(compgen -W "powershell cmd gitbash" -- "$current")
+        return 1
+    fi
+}
+_modmgr_completion_ep() {
+    _modmgr_completion_elev_priv
+    return $?
+}
+
+#
+# remove 补全
+#
+_modmgr_completion_remove() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+_modmgr_completion_rm() {
+    _modmgr_completion_remove
+    return $?
+}
+
+#
+# enable 补全
+#
+_modmgr_completion_enable() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
+# disable 补全
+#
+_modmgr_completion_disable() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
+# help 补全
+#
+_modmgr_completion_help() {
+    if [ "$argpos" = 2 ] ; then
+        local result=${_modmgrcmds[@]}
+        COMPREPLY=($(compgen -W "$result" -- "$current"))
+    fi
+}
+
+#
+# clean 补全
+#
+_modmgr_completion_clean() {
+    if [ "$argpos" = 2 ] ; then
+        _modmgr_completefilename
+        return 1
+    fi
+}
+
+#
+# show 补全
+#
+_modmgr_completion_show() {
+    if [ "$argpos" = 2 ] ; then
+        COMPREPLY=(compgen -W "module-path project-path script-path" -- "$current")
+        return 1
+    fi
+}
+
+#
+# mapadd 补全
 #
 _modmgr_completion_mapadd() {
-    _modmgr_completemodulename
+    _modmgr_completemodulepos
     if [ "$?" = "1" ] ; then
         return 1
     fi
@@ -276,7 +449,7 @@ _modmgr_completion_mapadd() {
     #
     # 第三个参数
     #
-    if [ "$argcount" -lt 4 ] ; then
+    if [ "$argpos" = 3 ] ; then
         _modmgr_completefilename
         return 1
     fi
@@ -312,7 +485,7 @@ _modmgr_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     pprev="${COMP_WORDS[COMP_CWORD-2]}"
     currentCommand="${COMP_WORDS[1]}"
-    argcount=$(expr ${#COMP_WORDS[@]} - 1)
+    argpos=$(expr ${#COMP_WORDS[@]} - 1)
     nooption=""
 
     #
@@ -324,9 +497,11 @@ _modmgr_completion() {
     #
     # 空命令
     #
-    if [ "${currentCommand:0:1}" = "-" ] ; then
+    if [ "${currentCommand:0:2}" = "--" ] ; then
         currentCommand=""
     fi
+
+    currentCommand=${currentCommand//-/_}
 
     #
     # 如存在 -- 参数, 后续不需要补全选项
