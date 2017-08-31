@@ -14,44 +14,45 @@ _modmgr_init() {
     #
     _modmgrcmds=(help list l deploy d undeploy ud clean git clone show version v ver
         initialize init create mapadd map mapdel persistent pss elev-priv ep cwd exit
-        remove rm disable enable auto-complete)
+        remove rm disable enable auto-complete update)
 
     #
     # 补全命令的选项列表
     #
-    _modmgrglobaloptions=(--nocolor --nooutput --help)
-    _modmgroption_help=()
-    _modmgroption_=(--test --install-bash-completion)
-    _modmgroption_list=(-a -s -l -o)
-    _modmgroption_l=(-a -s -l -o)
-    _modmgroption_deploy=(-f -a -c -y)
-    _modmgroption_d=(-f -a -c -y)
-    _modmgroption_undeploy=(-f -y -c)
-    _modmgroption_ud=(-f -y -c)
-    _modmgroption_clean=(-d -c)
-    _modmgroption_git=(-y)
-    _modmgroption_clone=(-f -n)
-    _modmgroption_show=(-a -v)
-    _modmgroption_version=(-s)
-    _modmgroption_v=(-s)
-    _modmgroption_ver=(-s)
-    _modmgroption_initialize=()
-    _modmgroption_init=()
-    _modmgroption_create=()
-    _modmgroption_mapadd=(--map -f)
-    _modmgroption_map=(-s -a -b)
-    _modmgroption_mapdel=()
-    _modmgroption_persistent=(--admin-shell --cwd)
-    _modmgroption_pss=(--admin-shell --cwd)
-    _modmgroption_elev_priv=(--cwd)
-    _modmgroption_ep=(--cwd)
-    _modmgroption_cwd=()
-    _modmgroption_exit=()
-    _modmgroption_remove=(-d)
-    _modmgroption_rm=(-d)
-    _modmgroption_disable=()
-    _modmgroption_enable=()
-    _modmgroption_auto_complete=()
+    _modmgrglobaloptions='--nocolor --nooutput --help'
+    _modmgroption_help=''
+    _modmgroption_='--test --install-bash-completion'
+    _modmgroption_list='-a -s -l -o'
+    _modmgroption_l='-a -s -l -o'
+    _modmgroption_deploy='-f -a -c -y'
+    _modmgroption_d='-f -a -c -y'
+    _modmgroption_undeploy='-f -y -c'
+    _modmgroption_ud='-f -y -c'
+    _modmgroption_clean='-d -c'
+    _modmgroption_git='-y'
+    _modmgroption_clone='-f -n'
+    _modmgroption_show='-a -v'
+    _modmgroption_version='-s'
+    _modmgroption_v='-s'
+    _modmgroption_ver='-s'
+    _modmgroption_initialize=''
+    _modmgroption_init=''
+    _modmgroption_create=''
+    _modmgroption_mapadd='--map -f'
+    _modmgroption_map='-s -a -b'
+    _modmgroption_mapdel=''
+    _modmgroption_persistent='--admin-shell --cwd'
+    _modmgroption_pss='--admin-shell --cwd'
+    _modmgroption_elev_priv='--cwd'
+    _modmgroption_ep='--cwd'
+    _modmgroption_cwd=''
+    _modmgroption_exit=''
+    _modmgroption_remove='-d'
+    _modmgroption_rm='-d'
+    _modmgroption_disable=''
+    _modmgroption_enable=''
+    _modmgroption_auto_complete=''
+    _modmgroption_update='-n'
 }
 
 _modmgr_compoptnospace() {
@@ -73,11 +74,10 @@ _modmgr_compoptspace() {
 _modmgr_processingoption() {
     case $current in
     -*)
-        local _name='${_modmgroption_'$currentCommand'[@]}'
-        local _options=$(eval echo $_name)
-        _options=("$_options ${_modmgrglobaloptions[@]}")
-        _options=${_options[@]}
-        COMPREPLY=($(compgen -W "${_options}" -- "${current}"))
+        local _name='_modmgroption_'$currentCommand
+        local options=$(eval printf '%s' '$'"$_name")
+        options="$options ${_modmgrglobaloptions[@]}"
+        COMPREPLY=($(compgen -W "$options" -- "${current}"))
         return 1
     esac
 }
@@ -165,8 +165,7 @@ _modmgr_completemodulename() {
     for dir in $(ls -F | grep "/$")
     do
         dir=${dir//\//}
-        result="$result
-$dir"
+        result="$result"$'\n'"$dir"
     done
     cd "$cwd"
 
@@ -263,8 +262,7 @@ _modmgr_completefilename() {
             file=$file"/"
         fi
 
-        results="$results
-${file// /\ }"
+        results="$results"$'\n'"${file// /\ }"
     done
 
     compresults=($(compgen -W "$results" -- "$_basename"))
@@ -284,7 +282,7 @@ ${file// /\ }"
     fi
 
     results=$(compgen -W "$results" -- "$_basename")
-    COMPREPLY=(${results// /\\ })
+    COMPREPLY=(${results})
 }
 
 #

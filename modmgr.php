@@ -25,6 +25,7 @@
  * @see App::_command_remove
  * @see App::_command_disable
  * @see App::_command_enable
+ * @see App::_command_update
  * -------------------------------------------------------------------------
  * @modmgr-help
  * Module Manager PHP Edition
@@ -329,6 +330,18 @@
  *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
  *      This argument can't be empty. You can use '*' to filter out all modules
  *
+ * @modmgr-help-update
+ * @d Update a module
+ *
+ * Usage: modmgr update [wildcard] [-n]
+ *
+ * wildcard:
+ *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
+ *      This argument can't be empty. You can use '*' to filter out all modules
+ * 
+ * option:
+ *     -n: Only execute git pull command.
+ * 
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
@@ -457,6 +470,7 @@ class App extends BaseApp
         'rm' => 'remove',
         'disable' => [],
         'enable' => [],
+        'update' => ['n'],
     ];
     protected $_noNeedToInit = [
         'help', 'version', 'initialize', 'persistent', 'cwd',
@@ -472,7 +486,7 @@ class App extends BaseApp
         }
 
         if($this->existsOption('--install-bash-completion')) {
-            $this->_command_install_gitbash_completion();
+            $this->_installBashCompletion();
             return true;
         }
 
@@ -1286,6 +1300,19 @@ class App extends BaseApp
         }
 
         return true;
+    }
+    
+    protected function _command_update($args)
+    {
+        if(empty($args[0])) {
+            return $this->errorLine("Missing a module name");
+        }
+        
+        $this->_command_git([$args[0], 'pull']);
+        
+        if(!$this->existsOption('n')) {
+            $this->_command_deploy($args);
+        }
     }
 }
 
@@ -2150,6 +2177,38 @@ abstract class BaseApp extends BaseOutputInput
 
         $document[$index]['detail'] = ' ' . trim(implode(\io\endline(), $document[$index]['detail']));
         return $document;
+    }
+
+    protected function _installBashCompletion()
+    {
+        if(\console\iswindows()) {
+            if(\console\execwincmd('git', ['--exec-path'], $output)) {
+                $gitPath = fs\path\parent($output, 3);
+                $installTargetFile = \fs\path\join($gitPath, 'etc', 'profile.d', MODMGR_AUTOCOMPLETION_SH);
+                $installOriginFile = \fs\path\join(dirname($this->_scriptPath), MODMGR_AUTOCOMPLETION_SH);
+
+                if(!\fs\isfile($installOriginFile)) {
+                    return $this->errorLine("File '%s' is not exists", $installOriginFile);
+                }
+
+                if(\fs\isdir(dirname($installTargetFile))) {
+                    if(\fs\isdir($installTargetFile)) {
+                        return $this->errorLine("Can't create link '%s', there is an existed directory", $installTargetFile);
+                    }
+
+                    if((\fs\islink($installTargetFile) or \fs\exists($installTargetFile))) {
+                        \fs\rm($installTargetFile);
+                    }
+
+                    try {
+                        \fs\symlink($installTargetFile, $installOriginFile);
+                        return $this->successLine("Install successfully");
+                    } catch(Exception $e) {
+                        $this->_processException($e);
+                    }
+                }
+            }
+        }
     }
 }
 
