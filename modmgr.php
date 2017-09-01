@@ -52,6 +52,12 @@
  *     --nooutput: Don't output anything
  *     --help: Show help documentation of a command
  *
+ *     Empty command options:
+ *      You can use the following options like `modmgr --install-bash-completion`
+ *
+ *     --install-bash-completion: Install bash completion. (In Windows system, only support for git-bash.exe)
+ *     --test:Used to check whether the program is installed. Always return 1
+ *
  * Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
  *
  * {$crGRAY}MODMGR git repository address: https://gitee.com/jinko/php-modmgr
@@ -338,10 +344,10 @@
  * wildcard:
  *      This argument use to filter modules. [wildcard] use '*' to match any character, use '?' to match one character.
  *      This argument can't be empty. You can use '*' to filter out all modules
- * 
+ *
  * option:
  *     -n: Only execute git pull command.
- * 
+ *
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
@@ -1301,15 +1307,15 @@ class App extends BaseApp
 
         return true;
     }
-    
+
     protected function _command_update($args)
     {
         if(empty($args[0])) {
             return $this->errorLine("Missing a module name");
         }
-        
+
         $this->_command_git([$args[0], 'pull']);
-        
+
         if(!$this->existsOption('n')) {
             $this->_command_deploy($args);
         }
@@ -2181,33 +2187,47 @@ abstract class BaseApp extends BaseOutputInput
 
     protected function _installBashCompletion()
     {
+        $installOriginFile = \fs\path\join(dirname($this->_scriptPath), MODMGR_AUTOCOMPLETION_SH);
+
         if(\console\iswindows()) {
             if(\console\execwincmd('git', ['--exec-path'], $output)) {
                 $gitPath = fs\path\parent($output, 3);
                 $installTargetFile = \fs\path\join($gitPath, 'etc', 'profile.d', MODMGR_AUTOCOMPLETION_SH);
-                $installOriginFile = \fs\path\join(dirname($this->_scriptPath), MODMGR_AUTOCOMPLETION_SH);
-
-                if(!\fs\isfile($installOriginFile)) {
-                    return $this->errorLine("File '%s' is not exists", $installOriginFile);
-                }
 
                 if(\fs\isdir(dirname($installTargetFile))) {
                     if(\fs\isdir($installTargetFile)) {
                         return $this->errorLine("Can't create link '%s', there is an existed directory", $installTargetFile);
                     }
-
-                    if((\fs\islink($installTargetFile) or \fs\exists($installTargetFile))) {
-                        \fs\rm($installTargetFile);
-                    }
-
-                    try {
-                        \fs\symlink($installTargetFile, $installOriginFile);
-                        return $this->successLine("Install successfully");
-                    } catch(Exception $e) {
-                        $this->_processException($e);
-                    }
                 }
+            } else {
+                return $this->errorLine("You have not installed git or gitbash yet");
             }
+        } else {
+            $dirpath = "/etc/profile.d";
+            $installTargetFile = \fs\path\join($dirpath, MODMGR_AUTOCOMPLETION_SH);
+
+            if(!\fs\isdir($dirpath)) {
+                return $this->errorLine("Can't not install completion.  '%s' is not exists", $dirpath);
+            }
+        }
+
+        if(!\fs\isfile($installOriginFile)) {
+            return $this->errorLine("File '%s' is not exists", $installOriginFile);
+        }
+
+        if((\fs\islink($installTargetFile) or \fs\exists($installTargetFile))) {
+            try {
+                \fs\rm($installTargetFile);
+            } catch (Exception $e) {
+                return $this->_processException($e);
+            }
+        }
+
+        try {
+            \fs\symlink($installTargetFile, $installOriginFile);
+            return $this->successLine("Install successfully");
+        } catch(Exception $e) {
+            $this->_processException($e);
         }
     }
 }

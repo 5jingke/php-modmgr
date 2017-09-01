@@ -75,7 +75,7 @@ _modmgr_processingoption() {
     case $current in
     -*)
         local _name='_modmgroption_'$currentCommand
-        local options=$(eval printf '%s' '$'"$_name")
+        local options=$(eval printf '%s' '"$'"$_name"'"')
         options="$options ${_modmgrglobaloptions[@]}"
         COMPREPLY=($(compgen -W "$options" -- "${current}"))
         return 1
@@ -480,6 +480,7 @@ _modmgr_completion_test() {
 #
 _modmgr_completion() {
     _modmgr_compoptspace
+    _modmgr_init
     #
     # completion 参数初始化
     #
@@ -513,7 +514,6 @@ _modmgr_completion() {
         #
         # 处理选项
         #
-        _modmgr_init
         _modmgr_processingoption
         if [ "$?" = "1" ] ; then
             return
