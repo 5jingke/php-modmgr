@@ -401,6 +401,16 @@ _modmgr_completion_enable() {
 }
 
 #
+# update 补全
+#
+_modmgr_completion_update() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
 # disable 补全
 #
 _modmgr_completion_disable() {
