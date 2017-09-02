@@ -1874,7 +1874,7 @@ abstract class BaseApp extends BaseOutputInput
 
         foreach ($mappings as $modulePath => $targetPath) {
             $moduleFullPath = fs\path\join($this->_modulePath, $module, $modulePath);
-            $targetFullPath = fs\path\join($this->_projectPath, $modulePath);
+            $targetFullPath = fs\path\join($this->_projectPath, $targetPath);
 
             try {
                 if($this->existsOption('c')) {

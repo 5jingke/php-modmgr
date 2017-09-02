@@ -75,7 +75,7 @@ namespace fs {
                 try{
                     return rmfile($path);
                 } catch (\Exception $e) {
-                    if(!\console\execwincmd('rmdir', [$path], $output)) {
+                    if(!\console\execwincmd('rmdir', [str_replace("/", '\\', $path)], $output)) {
                         throw \console\exception($output . "\n[Prev Operation Error] {$e->getMessage()})");
                     }
 
