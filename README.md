@@ -9,6 +9,10 @@
 在Windows系统中，命令补全只支持git-bash.exe，需要安装git和git-bash.exe(在安装git的时候可以选择安装git-bash)。命令补全也只能在git-bash.exe或者bash.exe中工作。在执行```modmgr --install-bash-completion```的时候, 如果是在win8或者更高的系统中同时开启了UAC。则需要管理员权限运行才能安装补全。提升权限可以直接通过命令进行：```modmgr ep cmd```
 注意,提升git-bash.exe的权限方法可以用: ```modmgr ep gitbash```，但是需要将git-bash.exe的目录路径添加到系统环境变量PATH中。
 
+打开环境变量的方法：
+
+按下```WIN+R```组合键打开运行 > 输入 ```SystemPropertiesAdvanced``` > 点击右下方```环境变量```按钮 > 在下方的```系统变量```区域中找到```Path``` > ```编辑``` 然后加入git-bash.exe的目录路径即可
+
 
 This tool makes it easy to manage the deployment and undeployment of modules in your project. Such as manage the modules of Magento.
 Influenced by the original modman at https://github.com/colinmollenhour/modman/
