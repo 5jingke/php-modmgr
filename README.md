@@ -1,3 +1,20 @@
+### Module Manager PHP Edition
+此工具可以方便管理项目中的模块的安装和卸载。 例如，管理Magento的模块等
+此工具参考于linux下的modman工具: https://github.com/colinmollenhour/modman/
+在工具的项目目录下有三个可执行文件， 分别是mm， mmm和modmgr。mm是modmgr的缩写命令，其运行输出会带有颜色。mmm 是不具有颜色输出的，等同于mm命令加上--nocolor选项， 适用于Windows的cmd.exe。
+为方便使用，此工具还提供了bash的命令补全脚本。在linux下执行 
+```sudo modmgr --install-bash-completion```
+即可安装命令补全脚本, 在新的shell会话中即可生效。命令补全mm, mmm和modmgr。如果补全无法安装，可以手动安装项目目录下的modmgr-completion.sh。
+
+在Windows系统中，命令补全只支持git-bash.exe，需要安装git和git-bash.exe(在安装git的时候可以选择安装git-bash)。命令补全也只能在git-bash.exe或者bash.exe中工作。在执行```modmgr --install-bash-completion```的时候, 如果是在win8或者更高的系统中同时开启了UAC。则需要管理员权限运行才能安装补全。提升权限可以直接通过命令进行：```modmgr ep cmd```
+注意,提升git-bash.exe的权限方法可以用: ```modmgr ep gitbash```，但是需要将git-bash.exe的目录路径添加到系统环境变量PATH中。
+
+
+This tool makes it easy to manage the deployment and undeployment of modules in your project. Such as manage the modules of Magento.
+Influenced by the original modman at https://github.com/colinmollenhour/modman/
+
+
+
  ```
 Module Manager PHP Edition
 
