@@ -1,7 +1,9 @@
 ### Module Manager PHP Edition
 此工具可以方便管理项目中的模块的安装和卸载。 例如，管理Magento的模块等
 此工具参考于linux下的modman工具: https://github.com/colinmollenhour/modman/
+
 在工具的项目目录下有三个可执行文件， 分别是mm， mmm和modmgr。mm是modmgr的缩写命令，其运行输出会带有颜色。mmm 是不具有颜色输出的，等同于mm命令加上--nocolor选项， 适用于Windows的cmd.exe。
+
 为方便使用，此工具还提供了bash的命令补全脚本。在linux下执行 
 ```sudo modmgr --install-bash-completion```
 即可安装命令补全脚本, 在新的shell会话中即可生效。命令补全mm, mmm和modmgr。如果补全无法安装，可以手动安装项目目录下的modmgr-completion.sh。
@@ -9,13 +11,26 @@
 在Windows系统中，命令补全只支持git-bash.exe，需要安装git和git-bash.exe(在安装git的时候可以选择安装git-bash)。命令补全也只能在git-bash.exe或者bash.exe中工作。在执行```modmgr --install-bash-completion```的时候, 如果是在win8或者更高的系统中同时开启了UAC。则需要管理员权限运行才能安装补全。提升权限可以直接通过命令进行：```modmgr ep cmd```
 注意,提升git-bash.exe的权限方法可以用: ```modmgr ep gitbash```，但是需要将git-bash.exe的目录路径添加到系统环境变量PATH中。
 
-打开环境变量的方法：
+添加环境变量的方法：
 
 按下```WIN+R```组合键打开运行 > 输入 ```SystemPropertiesAdvanced``` > 点击右下方```环境变量```按钮 > 在下方的```系统变量```区域中找到```Path``` > ```编辑``` 然后加入git-bash.exe的目录路径即可
 
 
 This tool makes it easy to manage the deployment and undeployment of modules in your project. Such as manage the modules of Magento.
 Influenced by the original modman at https://github.com/colinmollenhour/modman/
+
+There are three executable files, mm, mmm and modmgr in the root directory of this tools. mm is the abbreviation for modmgr, its output is colored. mmm output without color, it is equivalent to the implementation of mm with the --nocolor option.
+
+For easy to use, this tool also provides bash command completion script.Execute in linux
+```sudo modmgr --install-bash-completion```
+You can install the command completion script, in the new shell session to take effect.If the completion can not be installed, you can manually install the project directory modmgr-completion.sh.
+
+On Windows systems, command completion only supports git-bash.exe, and you need to install git and git-bash.exe (you can choose to install git-bash when installing git). Command completion can only work in git-bash.exe or bash.exe. In the implementation of ```modmgr - install-bash-completion```, if it is in the win8 or higher system at the same time open the UAC. You need to run with administrator privileges to install the completion. Raise permissions can be done directly through the command: ```modmgr ep cmd```
+Note that the elevated git-bash.exe permission method can be used: `` `modmgr ep gitbash```, but you need to add the git-bash.exe directory path to the system environment variable PATH.
+
+To add an environment variable:
+
+Press the ```WIN + R key``` combination to open the run > enter ```SystemPropertiesAdvanced``` and then press Enter > click the lower right of the ```environment variable``` button > in the bottom of the ```system variable area``` to find ```Path``` > ```edit``` and then add git-bash.exe directory path
 
 
 
@@ -74,6 +89,13 @@ Module Manager PHP Edition
      --nooutput: Don't output anything
      --help: Show help documentation of a command
 
+     Empty command options:
+      You can use the following options like `modmgr --install-bash-completion`
+
+     --install-bash-completion: Install bash completion. (In Windows system, only support for git-bash.exe)
+     --test:Used to check whether the program is installed. Always return 1
+
+
  Use `modmgr help [command]` or `modmgr [command] --help` to get the more details
 ```
 
@@ -130,6 +152,13 @@ Module Manager PHP Edition
      --nocolor: 不输出颜色代码
      --nooutput: 关闭输出
      --help: 显示某个命令的帮助文档
+
+     空命令选项:
+     你可以类似这样 `modmgr --install-bash-completion` 使用下面的选项
+
+     --install-bash-completion: 安装bash命令补全(在windows系统中只支持git-bash.exe)
+     --test: 测试此工具是否安装, 总是返回1
+
 
  执行 `modmgr help [command]` 或者 `modmgr [command] --help` 命令可以获取更多详细信息
 
