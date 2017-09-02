@@ -367,7 +367,7 @@ _modmgr_completion_map() {
 #
 _modmgr_completion_elev_priv() {
     if [ "$argpos" = 2 ] ; then
-        COMPREPLY=(compgen -W "powershell cmd gitbash" -- "$current")
+        COMPREPLY=($(compgen -W "powershell cmd gitbash" -- "$current"))
         return 1
     fi
 }

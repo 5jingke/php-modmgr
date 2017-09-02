@@ -1900,19 +1900,22 @@ abstract class BaseApp extends BaseOutputInput
                         $linkval = fs\path\relative(fs\path\parent($targetFullPath), $moduleFullPath);
                     }
 
-                    if(fs\islink($targetFullPath) && !$this->existsOption('f')) {
-                        $realpath = $linkval;
+                    $_sourcepath = @realpath($moduleFullPath);
+                    $_targetPath = @realpath($targetFullPath);
 
-                        if(!$this->existsOption('c')) {
-                            $realpath = realpath(fs\path\join(dirname($targetFullPath), $linkval));
+                    if(!$this->existsOption('f')) {
+                        if($this->existsOption('c')) {
+                            if(!fs\islink($targetFullPath) and fs\isfile($targetFullPath)) {
+                                if(md5_file($_sourcepath) == md5_file($_targetPath)) {
+                                    continue;
+                                }
+                            }
+                        } else {
+                            if(fs\islink($targetFullPath) and $_sourcepath == $_targetPath) {
+                                continue;
+                            }
                         }
 
-                        $realpath = fs\path\standard($realpath);
-                        $readlink = fs\path\standard(fs\readlink($targetFullPath));
-
-                        if($readlink == $realpath) {
-                            continue;
-                        }
                     }
 
                     $newItemCount ++;
