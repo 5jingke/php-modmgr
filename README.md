@@ -15,6 +15,9 @@
 
 按下```WIN+R```组合键打开运行 > 输入 ```SystemPropertiesAdvanced``` > 点击右下方```环境变量```按钮 > 在下方的```系统变量```区域中找到```Path``` > ```编辑``` 然后加入git-bash.exe的目录路径即可
 
+具体的用法参考```modmgr --help```
+
+
 
 This tool makes it easy to manage the deployment and undeployment of modules in your project. Such as manage the modules of Magento.
 Influenced by the original modman at https://github.com/colinmollenhour/modman/
@@ -26,12 +29,14 @@ For easy to use, this tool also provides bash command completion script.Execute 
 You can install the command completion script, in the new shell session to take effect.If the completion can not be installed, you can manually install the project directory modmgr-completion.sh.
 
 On Windows systems, command completion only supports git-bash.exe, and you need to install git and git-bash.exe (you can choose to install git-bash when installing git). Command completion can only work in git-bash.exe or bash.exe. In the implementation of ```modmgr - install-bash-completion```, if it is in the win8 or higher system at the same time open the UAC. You need to run with administrator privileges to install the completion. Raise permissions can be done directly through the command: ```modmgr ep cmd```
-Note that the elevated git-bash.exe permission method can be used: `` `modmgr ep gitbash```, but you need to add the git-bash.exe directory path to the system environment variable PATH.
+Note that the elevated git-bash.exe permission method can be used: ```modmgr ep gitbash```, but you need to add the git-bash.exe directory path to the system environment variable PATH.
 
 To add an environment variable:
 
 Press the ```WIN + R key``` combination to open the run > enter ```SystemPropertiesAdvanced``` and then press Enter > click the lower right of the ```environment variable``` button > in the bottom of the ```system variable area``` to find ```Path``` > ```edit``` and then add git-bash.exe directory path
 
+
+Specific usage reference ```modmgr --help```
 
 
  ```
