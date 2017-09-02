@@ -445,7 +445,7 @@ _modmgr_completion_clean() {
 #
 _modmgr_completion_show() {
     if [ "$argpos" = 2 ] ; then
-        COMPREPLY=(compgen -W "module-path project-path script-path" -- "$current")
+        COMPREPLY=($(compgen -W "module-path project-path script-path" -- "$current"))
         return 1
     fi
 }

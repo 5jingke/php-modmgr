@@ -519,6 +519,9 @@ class App extends BaseApp
                 $commandList [$i] = $_command;
             }
 
+            /**
+             * @var $commands String 在eval内部使用, 用于填充help文本中的命令
+             */
             $commands = '      '.implode(io\endline() . "       ", $commandList);
             $command = '-';
         } else if(!isset($this->_commandList[$command])) {
@@ -658,7 +661,7 @@ class App extends BaseApp
                 }
             }
         } else {
-            return $this->output($data[$args[0]]);
+            return $this->outputLine($data[$args[0]]);
         }
     }
 
