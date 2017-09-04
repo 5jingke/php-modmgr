@@ -142,7 +142,11 @@ namespace fs {
     function copy($source, $target) {
         if(isdir($source)) {
             $dir = opendir($source);
-            @mkdir($target);
+
+            if(!isdir($target)) {
+                @mkdir($target, true);
+            }
+
             while(false !== ( $file = readdir($dir)) ) {
                 if (( $file != '.' ) && ( $file != '..' )) {
                     if ( is_dir($source . '/' . $file) ) {
@@ -155,6 +159,12 @@ namespace fs {
             }
             closedir($dir);
         } else {
+            $targetDirName = dirname($target);
+
+            if(!isdir($targetDirName)) {
+                @mkdir($targetDirName, true);
+            }
+
             \copy($source, $target);
         }
     }

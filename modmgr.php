@@ -1820,16 +1820,18 @@ abstract class BaseApp extends BaseOutputInput
         $itemCount = 0;
 
         foreach ($mappings as $modulePath => $targetPath) {
-            $targetFullPath = fs\path\join($this->_projectPath, $modulePath);
+            $targetFullPath = fs\path\join($this->_projectPath, $targetPath);
 
             try {
                 if ($this->existsOption('c')) {
                     if (fs\exists($targetFullPath)) {
+                        $itemCount++;
                         fs\rm($targetFullPath, true);
                         $this->outputLine("Removed: '%s'", $targetFullPath);
                     }
                 } else {
                     if (fs\exists($targetFullPath)) {
+                        $itemCount++;
                         if(!fs\islink($targetFullPath) && !$this->existsOption('f')) {
                             $this->warningLine("There is an exist file or folder '%s'", $targetFullPath);
                             $this->infoLine("You can use '-f' option to forece remove exists file or folder.");
@@ -1837,8 +1839,6 @@ abstract class BaseApp extends BaseOutputInput
                             fs\rm($targetFullPath, true);
                             $this->successLine("Removed '%s'", $targetFullPath);
                         }
-
-                        $itemCount++;
                     }
                 }
             } catch (Exception $e) {
@@ -1879,21 +1879,34 @@ abstract class BaseApp extends BaseOutputInput
             $moduleFullPath = fs\path\join($this->_modulePath, $module, $modulePath);
             $targetFullPath = fs\path\join($this->_projectPath, $targetPath);
 
+            $showModuleFullPath = fs\path\relative(getcwd(), $moduleFullPath);
+            $showTargetFullPath = fs\path\relative(getcwd(), $targetFullPath);
+
+            if(strlen($showModuleFullPath) > strlen($moduleFullPath)) {
+                $showModuleFullPath = $moduleFullPath;
+            }
+
+            if(strlen($showTargetFullPath) > strlen($targetFullPath)) {
+                $showTargetFullPath = $targetFullPath;
+            }
+
             try {
                 if($this->existsOption('c')) {
                     if(fs\exists($targetFullPath)) {
                         if($this->existsOption('f')) {
-                            fs\rm($targetFullPath);
+                            fs\rm($targetFullPath, true);
                             fs\copy($moduleFullPath, $targetFullPath);
-                            $this->outputLine("Copy '%s' to '%s'", $moduleFullPath, $targetFullPath);
                         } else {
-                            $this->errorLine("Can't copy file or directory to '%s', the path is already exists", $targetFullPath);
+                            $this->warningLine("Can't copy file or directory to '%s', the path is already exists", $showTargetFullPath);
+                            $newItemCount ++;
+                            continue;
                         }
                     } else {
-                        $newItemCount ++;
                         fs\copy($moduleFullPath, $targetFullPath);
-                        $this->outputLine("Deployed: %s", $moduleFullPath);
                     }
+
+                    $newItemCount ++;
+                    $this->outputLine("Copy '%s' to '%s'", $showModuleFullPath, $showTargetFullPath);
                 } else {
                     $linkval = $moduleFullPath;
                     if(!$this->existsOption('a')) {
@@ -1925,11 +1938,11 @@ abstract class BaseApp extends BaseOutputInput
                             $result = fs\rm($targetFullPath,true);
 
                             if(true !== $result) {
-                                $this->errorLine("Can't remove link '%s'. %s", $targetFullPath, $result);
+                                $this->errorLine("Can't remove link '%s'.", $showTargetFullPath);
                                 continue;
                             }
                         } else {
-                            $this->errorLine("Can't create link '%s', the path is already exists", $targetFullPath);
+                            $this->errorLine("Can't create link '%s', the path is already exists", $showTargetFullPath);
                             continue;
                         }
                     }
