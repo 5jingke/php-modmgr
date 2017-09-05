@@ -1071,7 +1071,7 @@ class App extends BaseApp
         }
 
         $adminShells = [
-            'cmd' => 'cmd --none-- /k cd /d --quote-- ',
+            'cmd' => 'cmd /k cd /d ',
             'powershell' => 'powershell.exe -noexit -command Set-Location -literalPath ',
             'gitbash' => 'git-bash --cd=',
         ];
