@@ -62,6 +62,18 @@ _modmgr_compoptnospace() {
 }
 
 
+_modmgr_compoptfilename() {
+    compopt -o default "modmgr"
+    compopt -o default "mm"
+    compopt -o default "mmm"
+}
+
+_modmgr_compoptnofilename() {
+    compopt +o default "modmgr"
+    compopt +o default "mm"
+    compopt +o default "mmm"
+}
+
 _modmgr_compoptspace() {
     compopt +o nospace "modmgr"
     compopt +o nospace "mm"
@@ -204,7 +216,13 @@ _modmgr_processingemptyoption() {
 # 参数1: 文件类型 f:文件, d:目录, 为空表示全部
 #
 _modmgr_completefilename() {
-    _modmgr_compoptnospace
+#    _modmgr_compoptnospace
+    _modmgr_compoptfilename
+    COMPREPLY=()
+    return 1
+}
+
+_modmgr_completefilename_custom() {
     local currentIFS=$IFS
     local _files=() dir="." IFS=$'\n'
 
@@ -490,6 +508,7 @@ _modmgr_completion_test() {
 #
 _modmgr_completion() {
     _modmgr_compoptspace
+    _modmgr_compoptnofilename
     _modmgr_init
     #
     # completion 参数初始化

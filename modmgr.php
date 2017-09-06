@@ -841,6 +841,18 @@ class App extends BaseApp
             return $this->errorLine("The file you specifiy is not in the project path, you need to use '--map' option to specity the source and target path.");
         }
 
+        $modmanSubpath = fs\path\subpath($this->_modulePath, \fs\path\absolute($path));
+
+        if($modmanSubpath) {
+            $subpath = $modmanSubpath;
+
+            $moduleSubpath = fs\path\subpath($this->_modulePath.'/'.$moduleName, \fs\path\absolute($path));
+
+            if($moduleSubpath) {
+                $subpath = $moduleSubpath;
+            }
+        }
+
         $source = $mappingOption[0];
         $source = empty($source) ? $subpath : $source;
         $target = $mappingOption[1];
