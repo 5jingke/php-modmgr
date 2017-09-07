@@ -26,6 +26,7 @@
  * @see App::_command_disable
  * @see App::_command_enable
  * @see App::_command_update
+ * @see App::_command_open
  * -------------------------------------------------------------------------
  * @modmgr-help
  * Module Manager PHP Edition
@@ -348,6 +349,12 @@
  * option:
  *     -n: Only execute git pull command.
  *
+ *
+ * @modmgr-help-open
+ * @d Open module directory in windows explorer.exe
+ *
+ * Usage: modmgr open [modulename]
+ *
  */
 define('MODMGR_VERSION', '0.1.0');
 define('ERROR_REPORTING', E_ALL ^ E_NOTICE ^ E_STRICT);
@@ -377,106 +384,81 @@ class App extends BaseApp
      * @var array
      */
     protected $_commandList = [
-        /**
-         * @see _command_help
-         */
+        /** @see _command_help */
         'help' => [],
         '' => ['--test', '--install-bash-completion'],
 
-        /**
-         * @see _command_list
-         */
+        /** @see _command_list */
         'list' => ['a', 's', 'l', 'o'],
         'l' => 'list',
 
-        /**
-         * @see _command_deploy
-         */
+        /** @see _command_deploy */
         'deploy' => ['f', 'a', 'c', 'y'],
         'd' => 'deploy',
 
-        /**
-         * @see _command_undeploy
-         */
+        /** @see _command_undeploy */
         'undeploy' => ['f', 'y', 'c'],
         'ud' => 'undeploy',
 
-        /**
-         * @see _command_clean
-         */
+        /** @see _command_clean */
         'clean' => ['d', 'c'],
 
-        /**
-         * @see _command_git
-         */
+        /** @see _command_git */
         'git' => ['y'],
 
-        /**
-         * @see _command_clone
-         */
+        /** @see _command_clone */
         'clone' => ['f', 'n'],
 
-        /**
-         * @see _command_show
-         */
+        /** @see _command_show */
         'show' => ['a', 'v'],
 
-        /**
-         * @see _command_version
-         * s: 简单模式
-         */
+        /** @see _command_version */
         'version' => ['s'],
         'v' => 'version',
         'ver' => 'v',
 
-        /**
-         * @see _command_initialize
-         */
+        /** @see _command_initialize */
         'initialize' => [],
         'init' => 'initialize',
 
-        /**
-         * @see _command_create
-         */
+        /** @see _command_create */
         'create' => [],
 
-        /**
-         * @see _command_mapadd
-         */
+        /** @see _command_mapadd */
         'mapadd' => ['--map', 'f'],
-        /**
-         * @see _command_map
-         */
+        /** @see _command_map */
         'map' => ['s', 'a', 'b'],
 
-        /**
-         * @see _command_mapdel
-         */
+        /** @see _command_mapdel */
         'mapdel' => [],
 
-        /**
-         * @see _command_persistent
-         */
+        /** @see _command_persistent */
         'persistent' => ['--admin-shell', '--cwd'],
         'pss' => 'persistent',
 
-        /**
-         * @see _command_elev_priv
-         */
+        /** @see _command_elev-priv */
         'elev-priv' => ['--cwd'],
         'ep' => 'elev-priv',
 
-        /**
-         * @see _command_cwd
-         */
+        /** @see _command_cwd */
         'cwd' => [],
         'exit' => [],
 
+        /** @see _command_remove */
         'remove' => ['d'],
         'rm' => 'remove',
+
+        /** @see _command_disable */
         'disable' => [],
+
+        /** @see _command_enable */
         'enable' => [],
+
+        /** @see _command_update */
         'update' => ['n'],
+
+        /** @see _command_open */
+        'open' => [],
     ];
     protected $_noNeedToInit = [
         'help', 'version', 'initialize', 'persistent', 'cwd',
@@ -1335,6 +1317,26 @@ class App extends BaseApp
             $this->_command_deploy($args);
         }
     }
+
+    protected function _command_open($args)
+    {
+        if(!\console\iswindows()) {
+            $this->errorLine("This command does not supported in none Windiws system");
+        }
+
+        if(empty($args[0])) {
+            return $this->errorLine("Missing a module name");
+        }
+
+        $module = $args[0];
+
+        if(!$this->existsModule($module)) {
+            return $this->errorLine("Module '%s' is not exists", $module);
+        }
+
+        $modulePath = realpath(\fs\path\join($this->_modulePath, $module));
+        \console\execwincmd("explorer", "/e,\"$modulePath\" ");
+    }
 }
 
 /**
@@ -2091,7 +2093,7 @@ abstract class BaseApp extends BaseOutputInput
             return $this->errorLine("Command '%s' not found", $this->_command);
         }
 
-        $supportOptions = $this->_getCommandSupportOptions();
+        $supportOptions = (array)$this->_getCommandSupportOptions();
 
         foreach ($this->_options as $key => $option) {
             if(!in_array($key, $supportOptions) && !in_array($key, $this->_globalOptionsSupports)) {
@@ -2135,9 +2137,9 @@ abstract class BaseApp extends BaseOutputInput
     }
 
     protected function _isCommandNotFound() {
-        if(!isset($this->_commandList[$this->_targetCommand])) {
-            return true;
-        }
+        // if(!isset($this->_commandList[$this->_targetCommand])) {
+        //     return true;
+        // }
 
         if(!method_exists($this, $this->_getDispatchMethodName())) {
             return true;

@@ -544,6 +544,10 @@ namespace console {
     }
 
     function execwincmd($cmd, $args=[], &$output=null, $convert=true) {
+        if(!is_array($args)) {
+            $args = [$args];
+        }
+
         if(iswindows()) {
             $cmd = implode(' ', [$cmd, packargs($args), ' 2>&1']);
             exec($cmd, $output, $result);
@@ -577,7 +581,9 @@ namespace console {
         $args = empty($args) ? [] : $args;
 
         foreach($args as $i => $arg) {
-            if(strpos($arg," ")) {
+            $arg = trim($arg);
+
+            if($arg == '' or strpos($arg," ")) {
                 $args[$i] = "\"$arg\"";
             }
         }

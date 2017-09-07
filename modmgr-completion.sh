@@ -14,7 +14,7 @@ _modmgr_init() {
     #
     _modmgrcmds=(help list l deploy d undeploy ud clean git clone show version v ver
         initialize init create mapadd map mapdel persistent pss elev-priv ep cwd exit
-        remove rm disable enable auto-complete update)
+        remove rm disable enable auto-complete update open)
 
     #
     # 补全命令的选项列表
@@ -53,6 +53,7 @@ _modmgr_init() {
     _modmgroption_enable=''
     _modmgroption_auto_complete=''
     _modmgroption_update='-n'
+    _modmgroption_open=''
 }
 
 _modmgr_compoptnospace() {
@@ -432,6 +433,16 @@ _modmgr_completion_update() {
 # disable 补全
 #
 _modmgr_completion_disable() {
+    _modmgr_completemodulepos
+    if [ "$?" = "1" ] ; then
+        return 1
+    fi
+}
+
+#
+# open 补全
+#
+_modmgr_completion_open() {
     _modmgr_completemodulepos
     if [ "$?" = "1" ] ; then
         return 1
