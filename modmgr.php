@@ -65,7 +65,7 @@
  * git clone https://gitee.com/jinko/php-modmgr.git
  * git clone ssh://git@gitee.com:jinko/php-modmgr.git
  *
- * {$crGRAY}Power by {$crGREEN}Jinko Wu{$crGRAY}. Email {$crGREEN}jk@5jk.me{$crGRAY}.
+ * {$crGRAY}Powered by {$crGREEN}Jinko Wu{$crGRAY}. Email {$crGREEN}jk@5jk.me{$crGRAY}.
  * If you have any suggestions or comments, I am looking forward to your letter.{$crNULL}
  *
  *
