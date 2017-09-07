@@ -351,7 +351,7 @@
  *
  *
  * @modmgr-help-open
- * @d Open module directory in windows explorer.exe
+ * @d Open module directory in explorer.exe of Windows system
  *
  * Usage: modmgr open [modulename]
  *

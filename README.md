@@ -56,6 +56,7 @@
        disable     禁用模块
        enable      启用模块
        update      更新模块
+       open        在windows的资源管理器中打开模块的目录
 
  命令参数:
      所有在 '--' 后面的参数和选项将会被处理为命令参数
@@ -143,6 +144,7 @@ Module Manager PHP Edition
        disable     Disable a module
        enable      Enable a module
        update      Update a module
+       open        Open module directory in explorer.exe of Windows system
 
 
  commandArguments:
