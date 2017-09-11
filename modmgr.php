@@ -1942,10 +1942,13 @@ abstract class BaseApp extends BaseOutputInput
                                 continue;
                             }
                         }
-
                     }
 
                     $newItemCount ++;
+
+                    if(fs\islink($targetFullPath)) {
+                        fs\rm($targetFullPath);
+                    }
 
                     if(fs\exists($targetFullPath)) {
                         if($this->existsOption('f')) {
