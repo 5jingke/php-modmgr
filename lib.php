@@ -227,7 +227,8 @@ namespace fs\path {
         $parent = standard($parent);
         $sub = standard($sub);
         $subpath = substr($sub, strlen($parent));
-        return $subpath[0] == '/' ? ltrim($subpath, '/') : false;
+        $subpathPrefix = substr($sub, 0, strlen($parent));
+        return ($subpath[0] == '/' && $parent == $subpathPrefix) ? ltrim($subpath, '/') : false;
     }
 
     function relative($path, $targetPath) {
